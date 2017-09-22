@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load static %}
+
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap-social/bootstrap-social.css' %}"/>
+    <link rel="stylesheet" href="{% static 'vendor/datatables/css/dataTables.bootstrap4.min.css' %}"/>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+    {% include "breadcrumb.html" %}
+    </div>
+    <div class="row">
+    {% include "navbar_add.html" %}
+    </div>
+    <div class="row" style="margin-top: 20px">
+        <div class="col-lg-12">
+            <div class="panel panel-primary">
+                <div class="panel-heading">{{ panel_heading }}</div>
+                <div class="panel-body">
+                    {% include "table.html" %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="{{ modal.id }}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title" id="myModalLabel"></h4>
+                </div>
+                <div class="modal-body">
+                    <!-- 动态添加内容 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取 消</button>
+                    <button type="button" id="_game_del_modal_submit" class="btn btn-primary">确 认</button>
+                </div>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+    <!-- /.modal -->
+{% endblock %}
+
+{% block footer_js %}
+    <script type="text/javascript" src="{% static 'vendor/datatables/js/jquery.dataTables.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vendor/datatables/js/dataTables.bootstrap4.min.js' %}"></script>
+    <script language="javascript">
+        $(function () {
+            var table = $('.table').DataTable();
+            $('.tooltip-demo').tooltip({
+                selector: "[data-toggle=tooltip]",
+                container: "body"
+            });
+        });
+    </script>
+    <script type="text/javascript" src="{% static 'js/game.js' %}"></script>
+{% endblock %}

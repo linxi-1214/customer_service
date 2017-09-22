@@ -1,0 +1,14 @@
+<div class="col-lg-12">
+    <ol class="breadcrumb">
+{#        <li><a href="#">Home</a></li>#}
+        {% for breadcrumb_item in breadcrumb_items %}
+            <li class="{% if breadcrumb_item.active %} active{% endif %}">
+                {% if breadcrumb_item.href %}
+                <a href="{{ breadcrumb_item.href }}">{{ breadcrumb_item.label }}</a>
+                {% else %}
+                    {{ breadcrumb_item.label }}
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ol>
+</div>

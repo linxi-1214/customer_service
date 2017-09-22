@@ -1,0 +1,7 @@
+<div class="text-center tooltip-demo">
+    {% for action in actions %}
+        <a class="btn btn-social-icon btn-bitbucket btn-sm" data-toggle="tooltip" data-placement="bottom" href="{{ action.href }}" title="{{ action.tooltip }}" onclick="{{ action.func }}">
+            <i class="fa {{ action.icon }}"></i>
+        </a>
+    {% endfor %}
+</div>

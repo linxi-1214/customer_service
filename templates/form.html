@@ -1,0 +1,16 @@
+{% load html_controls %}
+<form id="{{ form.id }}" action="{{ form.action }}" method="{{ form.method }}">
+    {% csrf_token %}
+    {% for field in form.fields %}
+        {% text field %}
+        {% password field %}
+        {% select field %}
+        {% multi_select field %}
+        {% file_upload field %}
+        {% checkbox field %}
+        {% radio field %}
+        {% textarea field %}
+        {% button field %}
+        {% submit field %}
+    {% endfor %}
+</form>

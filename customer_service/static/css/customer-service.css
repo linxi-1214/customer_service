@@ -1,0 +1,11 @@
+ol.breadcrumb {
+    background-color: #343a40 !important;
+    min-height: 40px;
+    font-size: 15px;
+    font-style: italic;
+    font-family: "Roboto", "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+}
+
+.navbar-light {
+    background-color: #e3f2fd;
+}
