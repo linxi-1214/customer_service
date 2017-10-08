@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+    {% for css in media.css %}
+        {{ css }}
+    {% endfor %}
+{% endblock %}
+
 {% block content %}
     <div class="row">
     {% include "breadcrumb.html" %}
@@ -14,4 +20,10 @@
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block footer_js %}
+    {% for js in media.js %}
+        {{ js }}
+    {% endfor %}
 {% endblock %}

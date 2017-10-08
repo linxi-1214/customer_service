@@ -132,25 +132,65 @@ class Game(models.Model):
         db_table = "game"
 
 
+class PlayerImport(models.Model):
+    filename = models.CharField(null=False, max_length=100, verbose_name=u"文件名称")
+    stored_name = models.CharField(null=True, max_length=100, verbose_name=u"保存文件名称")
+    path = models.CharField(null=False, max_length=200, verbose_name=u"文件路径")
+    import_time = models.DateTimeField(auto_now=True)
+    notes = models.TextField(null=True)
+
+    class Meta:
+        verbose_name = verbose_name_plural = u"文件导入"
+        db_table = "player_import"
+
+
+class PlayerExport(models.Model):
+    filename = models.CharField(null=False, max_length=100, verbose_name=u"文件名称")
+    path = models.CharField(null=False, max_length=200, verbose_name=u"文件路径")
+    export_time = models.DateTimeField(auto_now=True)
+    notes = models.TextField(null=True)
+
+    class Meta:
+        verbose_name = verbose_name_plural = u"文件导出"
+        db_table = "player_export"
+
+
 class Player(models.Model):
     account = models.CharField(null=False, unique=True, max_length=100)
     username = models.CharField(null=True, max_length=100)
     mobile = models.CharField(null=True, max_length=20)
     qq = models.CharField(null=True, max_length=20)
+    come_from = models.CharField(null=True, max_length=100)
     locked = models.BooleanField(default=False)
+    imported_from = models.ForeignKey(PlayerImport, null=True, related_name="imported_from")
+    export_to = models.ForeignKey(PlayerExport, null=True, related_name="export_to")
     locked_by = models.ForeignKey(User, null=True)
+    locked_time = models.DateTimeField(null=True)
+    timestamp = models.DateTimeField(null=True)
+    is_deleted = models.BooleanField(default=False, null=False)
 
     class Meta:
         verbose_name = verbose_name_plural = "玩家"
         db_table = "player"
 
 
+class ContractResult(models.Model):
+    result = models.CharField(max_length=200, null=False)
+    bind = models.BooleanField(default=False, null=False)
+
+    class Meta:
+        verbose_name = verbose_name_plural = u'联系结果'
+        db_table = 'contract_result'
+
+
 class PlayerBindInfo(models.Model):
     user = models.ForeignKey(User, null=False)
     player = models.ForeignKey(Player, null=False)
-    is_bound = models.BooleanField(default=False)             # 是否绑定
-    contract_time = models.DateTimeField(auto_now=True)       # 联系时间
-    note = models.TextField()                                 # 备注信息
+    is_bound = models.BooleanField(default=False)                   # 是否绑定
+    contract_time = models.DateTimeField(auto_now=True)             # 联系时间
+    contract_result = models.ForeignKey(ContractResult, null=True)  # 联系结果
+    in_effect = models.BooleanField(default=True, null=False)
+    note = models.TextField()                                       # 备注信息
 
     class Meta:
         verbose_name = verbose_name_plural = "玩家联系记录"
@@ -165,6 +205,15 @@ class RegisterInfo(models.Model):
     class Meta:
         verbose_name = verbose_name_plural = "玩家注册信息"
         db_table = 'register_info'
+
+
+class PlayerLoginInfo(models.Model):
+    player = models.ForeignKey(Player, null=False)
+    game = models.ForeignKey(Game, null=False)
+    login_time = models.DateTimeField(null=True)
+
+    class Meta:
+        db_table = 'player_login_info'
 
 
 class AccountLog(models.Model):
@@ -195,8 +244,10 @@ class Alert(models.Model):
 
 
 class Menu(models.Model):
-    name = models.CharField(max_length=50, unique=True, null=False)
+    name = models.CharField(max_length=50, null=False)
     label = models.CharField(max_length=40, null=False)
+    icon = models.CharField(max_length=30, null=True)
+    order_index = models.IntegerField(null=True)
     parent = models.IntegerField(null=False, default=0)
 
     class Meta:
@@ -214,6 +265,7 @@ class RoleBindMenu(models.Model):
     class Meta:
         verbose_name = verbose_name_plural = "功能权限绑定"
         db_table = "role_bind_menu"
+
 
 #
 # class OperatorLog(models.Model):

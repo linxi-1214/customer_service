@@ -13,18 +13,16 @@
                 <tr class="{{ row.class }}" style="{{ row.style }}">
                     {% for col in row.columns %}
                         <td class="{{ col.class }}" style="{{ col.style }}">
-                            {{ col.text }}
+                            {{ col.text |safe }}
                         </td>
                     {% endfor %}
+                    {% if row.actions %}
                     <td>
                         {% include "table_action.html" with actions=row.actions %}
                     </td>
+                    {% endif %}
                 </tr>
             {% endfor %}
         </tbody>
     {% endif %}
 </table>
-
-{% block footer_js %}
-    {{ table.script|safe }}
-{% endblock %}

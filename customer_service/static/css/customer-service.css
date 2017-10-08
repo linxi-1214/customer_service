@@ -9,3 +9,19 @@ ol.breadcrumb {
 .navbar-light {
     background-color: #e3f2fd;
 }
+
+.panel-footer {
+    background-color: white;
+}
+
+.pager {
+    margin: 0;
+}
+
+.navbar-brand>img {
+    display: inline;
+}
+
+.navbar-brand {
+    padding: 6px 15px;
+}

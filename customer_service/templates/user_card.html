@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap-social/bootstrap-social.css' %}"/>
+    <link rel="stylesheet" href="{% static 'vendor/datatables/css/dataTables.bootstrap4.min.css' %}"/>
+    {% for css in media.css %}
+        {{ css|safe }}
+    {% endfor %}
+{% endblock %}
+
+{% block footer_js %}
+    {% for js in media.js %}
+        {{ js|safe }}
+    {% endfor %}
+    <script type="text/javascript" src="{% static 'vendor/datatables/js/jquery.dataTables.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vendor/datatables/js/dataTables.bootstrap4.min.js' %}"></script>
+    <script language="javascript">
+        $(function () {
+            var table = $('.table').DataTable();
+        });
+    </script>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+    {% include "breadcrumb.html" %}
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="panel panel-warning">
+                <div class="panel-heading"><i class="fa fa-star"> 使用提示</i></div>
+                <div class="panel-body">
+                1. 玩家的获取是根据导入顺序先后返回的<br>
+                2. 在联系玩家之后，修改相关信息，点击提交保存。如果你想以后继续联系该玩家，选择"锁定玩家"的复选框，之后在"玩家列表中"菜单可以看到。<br>
+                3. 点击"下一个"获取新的玩家信息。
+            </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="panel panel-primary">
+                <div class="panel-heading">玩家 {{ player.account }} 信息</div>
+                <div class="panel-body">
+                    <form class="form-horizontal" method="post" action="{% url 'contract_player' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="player_id" value="{{ player.id }}" />
+                        <div class="form-group">
+                            <label class="col-sm-1 control-label">账&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;号</label>
+                            <div class="col-sm-3">
+                                <p class="form-control-static">{{ player.account }}</p>
+                            </div>
+                            <label for="inputUsername" class="col-sm-1 control-label">姓&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;名</label>
+                            <div class="col-sm-3">
+                                <input type="text" class="form-control" name="username" id="inputUsername" placeholder="玩家姓名" {% if player.username %}value="{{ player.username }}"{% endif %} />
+                            </div>
+                            <label class="col-sm-1 control-label">手&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;机</label>
+                            <div class="col-sm-3">
+                                <p class="form-control-static">{{ player.mobile|default:"--" }}</p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="inputQQ" class="col-sm-1 control-label">QQ 号码</label>
+                            <div class="col-sm-3">
+                                <input type="text" class="form-control" name="qq" id="inputQQ" placeholder="QQ" {% if player.qq %}value="{{ player.qq }}"{% endif %} />
+                            </div>
+                            <label for="inputStatus" class="col-sm-1 control-label">标记状态</label>
+                            <div class="col-sm-3">
+                                <select id="inputStatus" name="status" class="form-control">
+                                    <option></option>
+                                    {% for s in status %}
+                                        <option value="{{ s.value }}" {{ s.selected }}>{{ s.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <label class="col-sm-1 control-label">锁定玩家</label>
+                            <div class="col-sm-1">
+                                <div class="checkbox">
+                                    <label>
+                                        <input name="locked" value="1" {% if player.locked %}checked{% endif %} type="checkbox"/>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="inputNotes" class="col-sm-1 control-label">备&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;注</label>
+                            <div class="col-sm-11">
+                                <textarea class="form-control" rows="3" name="notes" id="inputNotes"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-1 control-label">充值记录</label>
+                            <div class="col-sm-11">
+                                <div class="panel panel-green">
+                                    <div class="panel-heading">注册游戏&充值记录</div>
+                                    <div class="panel-body">
+                                        {% include "table.html" %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-lg-offset-1 col-sm-11">
+                                <button type="submit" class="btn btn-primary btn-sm btn-outline btn-block">保&nbsp;&nbsp;&nbsp;&nbsp;存</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="panel-footer">
+                    <nav aria-label="...">
+                    <ul class="pager">
+                        <li class="next"><a href="{% url 'contract_player' %}?current={{ player.id }}">下一个</a></li>
+                    </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

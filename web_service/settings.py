@@ -107,13 +107,17 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Shanghai'
 
 USE_I18N = True
 
 USE_L10N = True
 
 USE_TZ = True
+
+FILE_UPLOAD_TEMP_DIR = os.path.join(BASE_DIR, 'customer_service/tmp')
+
+FILE_UPLOAD_STORAGE_DIR = '/Users/wangxb/Work/upload'
 
 
 # Static files (CSS, JavaScript, Images)

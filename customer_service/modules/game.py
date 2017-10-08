@@ -119,6 +119,7 @@ class GameManager:
     def index():
         game_objs = Game.objects.filter(deleted=False)
         delete_url = reverse('delete_game')
+        media = Media(js=['js/game.js'])
         tbody = [
             {
                 'columns': [
@@ -152,6 +153,9 @@ class GameManager:
                     'label': u'游戏列表'
                 }
             ],
+            'media': {
+                'js': media.render_js()
+            },
             'panel_heading': u'游戏列表',
             'add_url': reverse('add_game'),
             'add_url_label': u'添加新的游戏项目',

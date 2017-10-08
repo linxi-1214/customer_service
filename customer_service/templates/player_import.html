@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load static %}
+{% load html_controls %}
+
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap-social/bootstrap-social.css' %}"/>
+    <link rel="stylesheet" href="{% static 'vendor/datatables/css/dataTables.bootstrap4.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'common/date/dateRange.css' %}"/>
+    {% for css in media.css %}
+        {{ css|safe }}
+    {% endfor %}
+{% endblock %}
+{% block extra_js %}
+    {% for js in header_media.js %}
+        {{ js|safe }}
+    {% endfor %}
+    <script>
+        $(function () {
+            var csrf_token = $.cookie('csrftoken');
+
+            $("#input-id").fileinput({
+                browseLabel: '浏览',
+                removeLabel: '删除',
+                uploadLabel: '导入',
+                showPreview: true,
+
+                msgSelected: '已选择 {n} 个文件',
+                msgPlaceholder: '请选择导入文件',
+                msgUploadEnd: '导入完成',
+                dropZoneTitle: '可将文件拖拽至此......',
+                allowedFileExtensions: ['xls', 'xlsx'],
+
+                uploadUrl: '{% url "import_player" %}',
+                uploadExtraData: {'csrfmiddlewaretoken': csrf_token}
+            });
+        });
+    </script>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+    {% include "breadcrumb.html" %}
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="form-group">
+                <div class="file-loading">
+                    <input id="input-id" name="player_file" type="file" multiple>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
+            <form class="form-inline" method="get">
+                <div class="form-group">
+                    <label for="filenameInput">文件名: </label>
+                    <input type="text" class="form-control" id="filenameInput" name="filename" placeholder="支持模糊查询">
+                </div>
+                <div class="form-group">
+                    <label for="timeInput">导入时间: </label>
+                    <input type="email" class="form-control" style="width: 200px;" id="timeInput" name="time" placeholder="起止时间">
+                </div>
+                <button type="submit" class="btn btn-primary">查询</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row" style="margin-top: 20px">
+        <div class="col-lg-12">
+            <div class="panel panel-primary">
+                <div class="panel-heading">{{ panel_heading }}</div>
+                <div class="panel-body">
+                    {% include "table.html" %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="{{ modal.id }}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title" id="myModalLabel"></h4>
+                </div>
+                <div class="modal-body">
+                    <!-- 动态添加内容 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取 消</button>
+                    <button type="button" id="_game_del_modal_submit" class="btn btn-primary">确 认</button>
+                </div>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+    <!-- /.modal -->
+{% endblock %}
+
+{% block footer_js %}
+    <script type="text/javascript" src="{% static 'vendor/datatables/js/jquery.dataTables.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vendor/datatables/js/dataTables.bootstrap4.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'common/date/dateRange.js' %}"></script>
+    {% for script in media.js %}
+        {{ script|safe }}
+    {% endfor %}
+    <script language="javascript">
+        $(function () {
+            var table = $('.table').DataTable();
+            $('.tooltip-demo').tooltip({
+                selector: "[data-toggle=tooltip]",
+                container: "body"
+            });
+
+            var dateRange = new pickerDateRange('timeInput', {
+                isTodayValid : true,
+                //startDate : '2013-04-14',
+                //endDate : '2038-04-21',
+                //needCompare : true,
+                //isSingleDay : true,
+                //shortOpr : true,
+                stopToday: false,
+                defaultText : ' ~ ',
+                inputTrigger : 'input_trigger_demo3',
+{#					success : function(obj) {#}
+{#						// console.info(obj);#}
+{#					},#}
+{#					clear :function(){#}
+{#						console.info(0);#}
+{#					}#}
+				});
+        });
+    </script>
+{% endblock %}

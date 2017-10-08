@@ -60,5 +60,7 @@
             });
         });
     </script>
-    <script type="text/javascript" src="{% static 'js/game.js' %}"></script>
+    {% for script in media.js %}
+        {{ script|safe }}
+    {% endfor %}
 {% endblock %}
