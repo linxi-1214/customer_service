@@ -25,7 +25,7 @@ SECRET_KEY = 'hlt&&$)7y+_$l5wk#-r@bn+vtc3*qn*yd3f8(-r-_oxe9o4$4p'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -123,9 +123,11 @@ FILE_UPLOAD_STORAGE_DIR = '/Users/wangxb/Work/upload'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, 'static'),
+    os.path.join(BASE_DIR, 'customer_service/static'),
 )
 
 STATIC_URL = '/static/'
+
+STATIC_ROOT = 'static'
 
 AUTH_USER_MODEL = 'customer_service.User'

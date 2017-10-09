@@ -22,7 +22,7 @@ from web_service import settings
 
 def index(request):
 
-    return HttpResponse()
+    return HttpResponse("login success")
 
 
 def new_message(request):
@@ -55,8 +55,11 @@ def user_login(request):
             login(request, user)
             index_url = reverse('index')
 
+            print(index_url)
+
             return HttpResponseRedirect(index_url)
         else:
+            print('error happened')
             return TemplateResponse(request, 'login.html', context={'error': u"认证失败"})
 
 
