@@ -7,6 +7,7 @@ from django.core.urlresolvers import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponseRedirect
 from django.views.decorators.http import require_http_methods
+from django.contrib.auth import authenticate, login, logout
 
 from webargs import fields
 from webargs.djangoparser import use_kwargs, use_args
@@ -20,6 +21,7 @@ from web_service import settings
 
 
 def index(request):
+
     return HttpResponse()
 
 
@@ -39,8 +41,31 @@ def user_settings(request):
     pass
 
 
+@require_http_methods(['POST', 'GET'])
 def user_login(request):
-    pass
+    if request.method == "GET":
+        return TemplateResponse(request, 'login.html')
+    else:
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            index_url = reverse('index')
+
+            return HttpResponseRedirect(index_url)
+        else:
+            return TemplateResponse(request, 'login.html', context={'error': u"认证失败"})
+
+
+@require_http_methods(["POST"])
+def user_logout(request):
+    logout(request)
+    login_url = reverse('login')
+
+    return HttpResponseRedirect(login_url)
 
 
 # Menu View Begin   ----------
