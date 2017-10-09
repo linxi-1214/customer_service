@@ -43,7 +43,7 @@
                         <h3 class="panel-title">系统登录</h3>
                     </div>
                     <div class="panel-body">
-                        <form role="form" action="{% url 'login' %}">
+                        <form role="form" method="post" action="{% url 'login' %}">
                             <fieldset>
                                 <div class="form-group">
                                     <input class="form-control" placeholder="username" name="username" type="text" autofocus>
