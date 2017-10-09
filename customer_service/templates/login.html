@@ -43,7 +43,7 @@
                         <h3 class="panel-title">系统登录</h3>
                     </div>
                     <div class="panel-body">
-                        <form role="form">
+                        <form role="form" action="{% url 'login' %}">
                             <fieldset>
                                 <div class="form-group">
                                     <input class="form-control" placeholder="username" name="username" type="text" autofocus>
@@ -57,7 +57,7 @@
                                     </div>
                                 {% endif %}
                                 <!-- Change this to a button or input when using this as a form -->
-                                <a href="{% url 'login' %}" class="btn btn-lg btn-success btn-block">登&nbsp;&nbsp;&nbsp;&nbsp;录</a>
+                                <button type="submit" class="btn btn-sm btn-primary btn-block">登&nbsp;&nbsp;&nbsp;&nbsp;录</button>
                             </fieldset>
                         </form>
                     </div>
