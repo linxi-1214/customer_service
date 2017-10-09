@@ -21,7 +21,7 @@
 	height: 20px;
 	line-height: 20px;
 	border: 1px solid #D6D6D6;
-	background: #FFF url('./images/icon_date.png') no-repeat 100% 50%;
+	background: #FFF url('images/icon_date.png') no-repeat 100% 50%;
 	cursor: pointer;
 	color: #666;
 }
@@ -70,7 +70,7 @@
 	float: left;
 	width: 15px;
 	height: 17px;
-	background: url('./images/page.png') no-repeat 0 0;
+	background: url('images/page.png') no-repeat 0 0;
 	overflow: hidden;
 }
 
@@ -78,7 +78,7 @@
 	float: right;
 	width: 15px;
 	height: 17px;
-	background: url('./images/page.png') no-repeat -15px 0;
+	background: url('images/page.png') no-repeat -15px 0;
 	overflow: hidden;
 }
 
@@ -251,7 +251,7 @@
  }
  .i_pre,.i_next,.ta_calendar td.ta_dateRangeSelected,.ta_calendar td.first,.ta_calendar td.last,.ta_calendar td.today{
  	/*background:url(http://imgcache.qq.com/bossweb/mta/images/calendar_all.png) no-repeat;*/
- 	background:url(./images/calendar_all.png) no-repeat;
+ 	background:url(images/calendar_all.png) no-repeat;
  	cursor:pointer;
  }
  .i_pre,.i_next{ width:23px; height:23px;display:inline-block; }
