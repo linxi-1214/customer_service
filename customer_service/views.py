@@ -17,12 +17,13 @@ from customer_service.models import Player
 
 from web_service import settings
 
+
 # Create your views here.
 
 
 def index(request):
-
-    return HttpResponse("login success %s" % request.user.loginname)
+    menus = Context.menus(request.user)
+    return TemplateResponse(request, 'index.html', context={'menus': menus})
 
 
 def new_message(request):

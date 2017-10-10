@@ -1,7 +1,5 @@
 from django.core.urlresolvers import reverse, NoReverseMatch
 
-from customer_service.models import Menu, User, Role
-
 from django.db import connection
 
 from collections import namedtuple
@@ -12,6 +10,11 @@ def namedtuplefetchall(cursor):
     desc = cursor.description
     nt_result = namedtuple('Result', [col[0] for col in desc])
     return [nt_result(*row) for row in cursor.fetchall()]
+
+
+panel_themes = [
+    "panel-primary", "panel-green", "panel-yellow", "panel-red"
+]
 
 
 class Context:
@@ -40,6 +43,8 @@ class Context:
             ORDER BY menu.order_index, menu.id ASC
         """
 
+        _index = 0
+        theme_length = len(panel_themes)
         with connection.cursor() as cursor:
             cursor.execute(select_sql, (user.id, 0))
             qry_set = namedtuplefetchall(cursor)
@@ -49,7 +54,9 @@ class Context:
                     "label": _menu.label,
                     "href": Context.get_url(_menu.view_name),
                     "icon": _menu.icon,
-                } for _menu in qry_set
+                    "number": index,
+                    "theme": panel_themes[index % theme_length]
+                } for index, _menu in enumerate(qry_set, start=_index)
             ]
 
         with connection.cursor() as cursor:
@@ -61,8 +68,10 @@ class Context:
                         "id": sm.id,
                         "label": sm.label,
                         "href": Context.get_url(sm.view_name),
-                        "icon": sm.icon
-                    } for sm in qry_set
+                        "icon": sm.icon,
+                        "number": ind,
+                        "theme": panel_themes[ind % theme_length]
+                    } for ind, sm in enumerate(qry_set, start=_index)
                 ]
                 menu.update(submenu=secondmenus)
 
@@ -75,8 +84,10 @@ class Context:
                             "id": sm.id,
                             "label": sm.label,
                             "href": Context.get_url(sm.view_name),
-                            "icon": sm.icon
-                        } for sm in qry_set
+                            "icon": sm.icon,
+                            "number": ind,
+                            "theme": panel_themes[ind % theme_length]
+                        } for ind, sm in enumerate(qry_set, start=_index)
                     ]
 
                     submenu.update(submenu=thirdmenus)

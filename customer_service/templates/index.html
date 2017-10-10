@@ -1,36 +1,43 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div id="title_row" class="row">
-        <div class="col-lg-12">
-            <h1 class="page-header">主面板</h1>
-        </div>
-        <!-- /.col-lg-12 -->
-    </div>
+{#    <div id="title_row" class="row">#}
+{#        <div class="col-lg-12">#}
+{#            <h1 class="page-header">主面板</h1>#}
+{#        </div>#}
+{#        <!-- /.col-lg-12 -->#}
+{#    </div>#}
     <!-- /.row -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="panel panel-primary">
+                <div class="panel-heading"><i class="fa fa-star"> 欢迎使用</i></div>
+                <div class="panel-body">
+                <h3>欢迎使用盘锦艺游网络科技－客服系统</h3>
+            </div>
+            </div>
+        </div>
+    </div>
 
     <div id="panel_row" class="row">
         {% for menu in menus %}
-            <div class="col-lg-3 col-md-6">
-                <div class="panel {{ menu.theme }}">
-                    <div class="panel-heading">
-                        <div class="row">
-                            <div class="col-xs-3">
-                                <i class="fa {{ menu.icon }} fa-5x"></i>
-                            </div>
-                            <div class="col-xs-9 text-right">
-                                <div class="huge">{{ menu.number }}</div>
-                                <div>{{ menu.label }}</div>
-                            </div>
-                        </div>
-                    </div>
-                    <a href="{{ menu.href }}">
-                        <div class="panel-footer">
-                            <span class="pull-left">点击进入</span>
-                            <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
-                            <div class="clearfix"></div>
-                        </div>
-                    </a>
+            {% if menu.submenu %}
+                {% for secondmenu in menu.submenu %}
+                    {% if secondmenu.submenu %}
+                        {% for thirdmenu in menu.submenu %}
+                            {% include 'includes/panel_icon.html' with menu=thirdmenu %}
+                        {% endfor %}
+                    {% else %}
+                        {% include 'includes/panel_icon.html' with menu=secondmenu %}
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                {% include 'includes/panel_icon.html' with menu=menu %}
+            {% endif %}
+        {% empty %}
+            <div class="col-lg-12">
+                <div class="alert alert-warning">
+                    <h4>您还没有任何操作权限，请联系管理员！</h4>
                 </div>
             </div>
         {% endfor %}

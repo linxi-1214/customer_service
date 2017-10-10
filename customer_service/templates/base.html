@@ -32,7 +32,7 @@
 {#                    <span class="icon-bar"></span>#}
 {#                </button>#}
                 <a class="navbar-brand" href="{% url 'index' %}">
-                    <img src="{% static 'img/niudao.png' %}" style="width: 7%; margin-bottom: 2px;"><h1>客服系统</h1>
+                    <img src="{% static 'img/niudao.png' %}" style="width: 7%; margin-bottom: 2px;">客服系统
                 </a>
             </div>
             <!-- /.navbar-header -->
@@ -226,6 +226,13 @@
     <script src="{% static 'js/sb-admin-2.min.js' %}"></script>
     {% block  footer_js %}
     {% endblock %}
+    <script type="text/javascript">
+        $(function () {
+            var window_height = window.innerHeight;
+            var nav_height = parseInt($("nav").css('height'));
+            $("#page-wrapper").css({'min-height': window_height-nav_height});
+        })
+    </script>
 </body>
 
 </html>
