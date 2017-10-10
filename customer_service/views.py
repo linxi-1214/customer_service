@@ -9,7 +9,6 @@ from django.http import HttpResponseRedirect
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth import authenticate, login, logout
 
-from django.utils import six
 from django import http
 from django.template import Context, Engine, TemplateDoesNotExist, loader
 
@@ -469,7 +468,7 @@ def delete_game(request, id):
 # Error View Begin
 
 
-def error_500(request, template_name="user/500.html"):
+def error_500(request, template_name="errors/500.html"):
 
     context = {'menus': Context.menus(request.user)}
     template = loader.get_template(template_name)
