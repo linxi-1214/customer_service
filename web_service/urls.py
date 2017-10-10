@@ -20,3 +20,7 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^customer-service/', include('customer_service.urls'))
 ]
+
+
+handler404 = handler400 = handler403 = "customer_service.views.error_view"
+handler500 = "customer_service.views.error_500"

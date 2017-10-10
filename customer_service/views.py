@@ -9,6 +9,10 @@ from django.http import HttpResponseRedirect
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth import authenticate, login, logout
 
+from django.utils import six
+from django import http
+from django.template import Context, Engine, TemplateDoesNotExist, loader
+
 from webargs import fields
 from webargs.djangoparser import use_kwargs, use_args
 
@@ -52,7 +56,7 @@ def user_login(request):
 
         user = authenticate(request, username=username, password=password)
 
-        if user is not None:
+        if user is not None and user.is_active:
             login(request, user)
             index_url = reverse('index')
 
@@ -461,3 +465,40 @@ def delete_game(request, id):
         return HttpResponseRedirect(game_index_url)
 
 # Game View End -------------
+
+# Error View Begin
+
+
+def error_500(request, template_name="user/500.html"):
+
+    context = {'menus': Context.menus(request.user)}
+    template = loader.get_template(template_name)
+    return http.HttpResponseServerError(template.render(context, request))
+
+
+def error_view(request, exception):
+    context = {'menus': Context.menus(request.user)}
+    exception_name = exception.__class__.__name__
+
+    try:
+        print(exception_name)
+        if exception_name.lower() == "resolver404":
+            template = loader.get_template("errors/404.html")
+        elif exception_name.lower() == "permissiondenied":
+            template = loader.get_template("errors/403.html")
+        elif exception_name.lower() == "suspiciousoperation":
+            template = loader.get_template("errors/400.html")
+        else:
+            template = loader.get_template("errors/400.html")
+
+        body = template.render(context, request)
+        content_type = None  # Django will use DEFAULT_CONTENT_TYPE
+    except TemplateDoesNotExist:
+        template = Engine().from_string(
+            '<h1>Not Found</h1>'
+            '<p>The requested URL {{ request_path }} was not found on this server.</p>')
+        body = template.render(Context(context))
+        content_type = 'text/html'
+    return http.HttpResponseNotFound(body, content_type=content_type)
+
+# Error View End
