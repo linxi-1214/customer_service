@@ -45,6 +45,9 @@
                     <div class="panel-body">
                         <form role="form" method="post" action="{% url 'login' %}">
                             {% csrf_token %}
+                            {% if next %}
+                                <input type="hidden" name="next" value="{{ next|safe }}"/>
+                            {% endif %}
                             <fieldset>
                                 <div class="form-group">
                                     <label class="control-label">用户名</label>

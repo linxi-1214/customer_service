@@ -1,9 +1,19 @@
+<style>
+    .table>thead>tr>th {
+        font-size: 10px;
+    }
+    .table>tbody>tr>td {
+        padding: 4px;
+        vertical-align: middle;
+        font-size: 12px;
+    }
+</style>
 <table id="{{ table.id }}" class="table table-striped table-bordered" style="{{ table.style }}">
     <thead>
         <tr class="{{ table.header.class }}" style="{{ table.header.style }}">
             <th style="display: none"></th>
             {% for col in table.headers %}
-                <th class="{{ col.class }}" style="{{ row.style }}">{{ col.text }}</th>
+                <th {% if col.class %}class="{{ col.class }}"{% endif %} {% if row.style %}style="{{ row.style }}"{% endif %}>{{ col.text }}</th>
             {% endfor %}
         </tr>
     </thead>
@@ -12,12 +22,12 @@
             {% for row in table.tbody %}
                 <tr class="{{ row.class }}" style="{{ row.style }}">
                     {% for col in row.columns %}
-                        <td class="{{ col.class }}" style="{{ col.style }}">
+                        <td {% if col.class %}class="{{ col.class }}"{% endif %} {% if col.style %}style="{{ col.style }}"{% endif %}>
                             {{ col.text |safe }}
                         </td>
                     {% endfor %}
                     {% if row.actions %}
-                    <td>
+                    <td style="width: 100px;">
                         {% include "table_action.html" with actions=row.actions %}
                     </td>
                     {% endif %}
@@ -26,3 +36,52 @@
         </tbody>
     {% endif %}
 </table>
+
+<script language="javascript">
+    $(function () {
+        var table = $('.table')
+            .on('init.dt', function () {
+                $("label > select").select2({
+                    placeholder: {
+                        id: 0,
+                        text: '-- 请选择 --'
+                    },
+                    allowClear: false,
+                    containerCssClass: 'table-select'
+                });
+            })
+            .DataTable({
+{#                columnDefs: [#}
+{#                    {"targets": '_all', "width": '120px'}#}
+{#                ],#}
+{#                scrollY:        true,#}
+{#                scrollX:        true,#}
+{#                scrollCollapse: true,#}
+            lengthMenu: [[10, 15, 20, 25, 30, 40, 50, -1], [10, 15, 20, 25, 30, 40, 50, "All"]],
+            autoWidth: false,
+            paging: true,
+            fixedColumns: {
+                heightMatch: 'auto',
+                leftColumns: 2,
+                rightColumns: 1
+            },
+            language: {
+                emptyTable: "暂无数据",
+                info: "当前显示<b>_START_</b>至<b>_END_</b>项  共 <b>_TOTAL_</b> 项",
+                lengthMenu: "每页显示 _MENU_ 项",
+                loadingRecords: "正在加载...",
+                search: "搜索:",
+                zeroRecords: "无匹配项",
+                paginate: {
+                    "next": "下一页",
+                    "previous": "上一页"
+                }
+            }
+        });
+
+        $('.tooltip-demo').tooltip({
+            selector: "[data-toggle=tooltip]",
+            container: "body"
+        });
+    });
+</script>

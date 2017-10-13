@@ -137,7 +137,7 @@ def generate_file_upload(field_info):
 
 @control_decorator('multi_select')
 def _multi_select_html(field_info):
-    _html = '<select multiple class="form-control{extra_class}" {extra_style} id="{id}" name="{name}" {disabled}>\n'.format(
+    _html = '<select multiple class="form-control{extra_class}" kind="form-select" {extra_style} id="{id}" name="{name}" {disabled}>\n'.format(
         id=field_info.get('id', ''), name=field_info.get('name', ''),
         extra_class=" %s" % field_info.get('extra_css') if field_info.get('extra_css') else '',
         extra_style='style={%s}' % field_info.get('extra_style') if field_info.get('extra_style') else '',
@@ -161,7 +161,7 @@ def generate_multi_select(field_info):
 
 @control_decorator('select')
 def _select_html(field_info):
-    _html = '<select class="form-control{extra_class}" {extra_style} id="{id}" name="{name}" {disabled}>\n'.format(
+    _html = '<select class="form-control{extra_class}" kind="form-select" {extra_style} id="{id}" name="{name}" {disabled}>\n'.format(
         id=field_info.get('id', ''), name=field_info.get('name', ''),
         extra_class=" %s" % field_info.get('extra_css') if field_info.get('extra_css') else '',
         extra_style='style={%s}' % field_info.get('extra_style') if field_info.get('extra_style') else '',

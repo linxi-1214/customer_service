@@ -4,9 +4,10 @@ from customer_service import views
 
 urlpatterns = [
     url(r'login/$', views.user_login, name='login'),
+    url(r'logout/$', views.user_logout, name='logout'),
     url(r'home/index/$', views.index, name='index'),
-    url(r'user-profile', views.user_profile, name='profile'),
-    url(r'user-settings', views.user_settings, name='user_settings'),
+    url(r'user/profile', views.user_profile, name='profile'),
+    url(r'user/settings', views.user_settings, name='user_settings'),
     url(r'message-add/$', views.new_message, name='add_message'),
     url(r'message-list/$', views.message_list, name='message'),
 

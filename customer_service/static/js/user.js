@@ -23,11 +23,12 @@ function delete_user_submit(url, user_id) {
     })
 }
 $(function () {
-    $("select").select2({
+    $("select[kind=form-select]").select2({
         placeholder: {
             id: 0,
             text: '-- 请选择 --'
         },
-        allowClear: true
+        allowClear: true,
+        containerCss: {'height': '34px'}
     });
 });

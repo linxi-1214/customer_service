@@ -22,7 +22,7 @@ function delete_menu_submit(url, menu_id) {
     })
 }
 $(function () {
-    $("select").select2({
+    $("select[kind=form-select]").select2({
         placeholder: {
             id: 0,
             text: '-- 请选择 --'

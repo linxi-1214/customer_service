@@ -21,6 +21,13 @@ function delete_role_submit(url, role_id) {
         }
     })
 }
-$(function () {
 
+$(function () {
+    $("select[kind=form-select]").select2({
+        placeholder: {
+            id: 0,
+            text: '-- 请选择 --'
+        },
+        allowClear: true
+    });
 });

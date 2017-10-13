@@ -136,12 +136,12 @@
 }
 
 .gri_pn {
-	background: url("./images/pn.png") repeat-x scroll 0 -48px #E5E5E5;
+	background: url("./images/px.png") repeat-x scroll 0 -48px #E5E5E5;
 	color: #fff;
 }
 
 .gri_pnc {
-	background: url("./images/pn.png") repeat-x scroll 0 0 #E5E5E5;
+	background: url("./images/px.png") repeat-x scroll 0 0 #E5E5E5;
 }
 
 .gri_co {
@@ -330,11 +330,11 @@
  	padding: 4px 11px;
  	text-align:center;
  	white-space:nowrap;
- 	font-family:"΢���ź�";
+ 	font-family:"sans-serif";
  	cursor:pointer;
  }
  .calendar-month td.hover,.calendar-month td:hover,.calendar-month caption span:hover{
- 	background:#;
+ 	background:#0d6aad;
  	color:#6590c1;
  	border:1px solid #6590c1;
  	padding: 3px 10px;

@@ -78,7 +78,7 @@ $(function () {
         $("#add_game_button_id").attr({disabled: "disabled"});
 
     try {
-        $("select").select2({
+        $("select[kind=form-select]").select2({
             placeholder: {
                 id: 0,
                 text: '-- 请选择 --'
@@ -86,7 +86,7 @@ $(function () {
             allowClear: true,
             containerCss: {height: '34px'}
         });
-        $("select").on('select2:select', function (e) {
+        $("select[kind=form-select]").on('select2:select', function (e) {
             var option_value = e.params.data.id;
             var select_obj = e.target;
             var option = $($(select_obj).children('[value="' + option_value + '"]'));

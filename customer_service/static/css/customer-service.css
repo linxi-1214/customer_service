@@ -25,3 +25,9 @@ ol.breadcrumb {
 .navbar-brand {
     padding: 6px 15px;
 }
+
+.static-p {
+    font-size: 14px;
+    margin-bottom: 4px;
+    font-weight: normal;
+}

@@ -107,8 +107,8 @@ class UserManager:
                 "selected": role.id == user_obj.role_id
             } for role in role_objs
             ]
-        media = Media(js=['common/selector2/js/select2.js', 'js/user.js'],
-                      css={'all': ['common/selector2/css/select2.min.css']})
+        media = Media(js=['common/selector2/js/select2.full.js', 'js/user.js'],
+                      css={'all': ['common/selector2/css/select2.min.css', 'css/custom-select.css']})
 
         return {
             'breadcrumb_items': [
@@ -170,6 +170,9 @@ class UserManager:
                     },
                     {
                         "type": "select",
+                        "attrs": {
+                            "kind": "form-select"
+                        },
                         "label": u'角色',
                         'name': 'role_id',
                         'help_id': '_user_role_help',

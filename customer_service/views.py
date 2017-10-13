@@ -5,6 +5,7 @@ from datetime import datetime
 from django.template.response import TemplateResponse, HttpResponse
 from django.core.urlresolvers import reverse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth import authenticate, login, logout
@@ -19,6 +20,7 @@ from customer_service.modules import *
 from customer_service.models import Player
 
 from web_service import settings
+from customer_service.decorator import permission_need, ADMIN, DATA_USER, CUSTOMER_SERVICE
 
 
 # Create your views here.
@@ -48,7 +50,12 @@ def user_settings(request):
 @require_http_methods(['POST', 'GET'])
 def user_login(request):
     if request.method == "GET":
-        return TemplateResponse(request, 'login.html')
+        next_url = request.GET.get('next', None)
+        if next_url:
+            context = {'next': next_url}
+        else:
+            context = {}
+        return TemplateResponse(request, 'login.html', context=context)
     else:
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -57,14 +64,15 @@ def user_login(request):
 
         if user is not None and user.is_active:
             login(request, user)
-            index_url = reverse('index')
+            next_url = request.POST.get('next', None)
+            index_url = next_url or reverse('index')
 
             return HttpResponseRedirect(index_url)
         else:
             return TemplateResponse(request, 'login.html', context={'error': u"认证失败"})
 
 
-@require_http_methods(["POST"])
+@require_http_methods(["GET"])
 def user_logout(request):
     logout(request)
     login_url = reverse('login')
@@ -73,6 +81,8 @@ def user_logout(request):
 
 
 # Menu View Begin   ----------
+@login_required
+@permission_need(ADMIN)
 def menu_index(request):
     context = MenuManager.index()
     menus = Context.menus(request.user)
@@ -82,6 +92,8 @@ def menu_index(request):
     return TemplateResponse(request, "change_list.html", context=context)
 
 
+@login_required
+@permission_need(ADMIN)
 def new_menu(request):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -95,6 +107,8 @@ def new_menu(request):
         return HttpResponseRedirect(menu_index_url)
 
 
+@login_required
+@permission_need(ADMIN)
 def edit_menu(request, id):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -107,6 +121,8 @@ def edit_menu(request, id):
         return HttpResponseRedirect(reverse('menu_index'))
 
 
+@login_required
+@permission_need(ADMIN)
 @require_http_methods(["POST"])
 @csrf_exempt
 @use_kwargs({'id': fields.Int(required=True, validate=lambda id: id > 0)})
@@ -129,8 +145,10 @@ def delete_menu(request, id):
 
 
 # Player View Begin   ----------
+@login_required
+@permission_need([ADMIN, DATA_USER])
 def player_index(request):
-    context = PlayerManager.index()
+    context = PlayerManager.index(request.user)
     menus = Context.menus(request.user)
 
     context.update(menus=menus)
@@ -138,6 +156,8 @@ def player_index(request):
     return TemplateResponse(request, "change_list.html", context=context)
 
 
+@login_required
+@permission_need([ADMIN, DATA_USER])
 def new_player(request):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -151,6 +171,8 @@ def new_player(request):
         return HttpResponseRedirect(player_index_url)
 
 
+@login_required
+@permission_need([ADMIN, DATA_USER])
 def edit_player(request, id):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -163,6 +185,8 @@ def edit_player(request, id):
         return HttpResponseRedirect(reverse('player_index'))
 
 
+@login_required
+@permission_need([ADMIN, DATA_USER])
 def export_player(request):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -173,6 +197,8 @@ def export_player(request):
         PlayerManager.export_player()
 
 
+@login_required
+@permission_need([ADMIN, DATA_USER])
 def import_player(request):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -199,6 +225,8 @@ def import_player(request):
         return HttpResponse(json.dumps({'msg': 'OK'}))
 
 
+@login_required
+@permission_need([ADMIN, DATA_USER])
 @require_http_methods(["POST"])
 @csrf_exempt
 @use_kwargs({'id': fields.Int(required=True, validate=lambda id: id > 0)})
@@ -218,6 +246,8 @@ def delete_player(request, id):
         return HttpResponseRedirect(player_index_url)
 
 
+@login_required
+@permission_need([ADMIN, DATA_USER, CUSTOMER_SERVICE])
 @require_http_methods(["GET", "POST"])
 def contract_player(request):
     menus = Context.menus(request.user)
@@ -230,12 +260,11 @@ def contract_player(request):
         player_id = request.GET.get('player', None)
         current_player_id = request.GET.get('current', None)
 
-    context = PlayerManager.contract_display(player_id)
-    context.update(menus=menus)
+        if current_player_id:
+            Player.objects.filter(id=current_player_id).update(current_contact_user=None)
 
-    if current_player_id:
-        print(current_player_id)
-        Player.objects.filter(id=current_player_id).update(locked=False)
+    context = PlayerManager.contract_display(player_id, request.user)
+    context.update(menus=menus)
 
     return TemplateResponse(request, "user_card.html", context=context)
 
@@ -243,6 +272,8 @@ def contract_player(request):
 
 
 # Result View Begin   ----------
+@login_required
+@permission_need(ADMIN)
 def result_index(request):
     context = ContactResultManager.index()
     menus = Context.menus(request.user)
@@ -252,6 +283,8 @@ def result_index(request):
     return TemplateResponse(request, "change_list.html", context=context)
 
 
+@login_required
+@permission_need(ADMIN)
 def new_result(request):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -265,6 +298,8 @@ def new_result(request):
         return HttpResponseRedirect(result_index_url)
 
 
+@login_required
+@permission_need(ADMIN)
 def edit_result(request, id):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -277,6 +312,8 @@ def edit_result(request, id):
         return HttpResponseRedirect(reverse('result_index'))
 
 
+@login_required
+@permission_need(ADMIN)
 @require_http_methods(["POST"])
 @csrf_exempt
 @use_kwargs({'id': fields.Int(required=True, validate=lambda id: id > 0)})
@@ -299,6 +336,8 @@ def delete_result(request, id):
 
 
 # User View Begin   ----------
+@login_required
+@permission_need(ADMIN)
 def user_index(request):
     context = UserManager.index()
     menus = Context.menus(request.user)
@@ -308,6 +347,8 @@ def user_index(request):
     return TemplateResponse(request, "change_list.html", context=context)
 
 
+@login_required
+@permission_need(ADMIN)
 def new_user(request):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -321,6 +362,8 @@ def new_user(request):
         return HttpResponseRedirect(user_index_url)
 
 
+@login_required
+@permission_need(ADMIN)
 def edit_user(request, id):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -333,6 +376,8 @@ def edit_user(request, id):
         return HttpResponseRedirect(reverse('user_index'))
 
 
+@login_required
+@permission_need(ADMIN)
 @require_http_methods(["POST"])
 @csrf_exempt
 @use_kwargs({'id': fields.Int(required=True, validate=lambda id: id > 0)})
@@ -355,6 +400,8 @@ def delete_user(request, id):
 
 
 # Role View Begin   ----------
+@login_required
+@permission_need(ADMIN)
 def role_index(request):
     context = RoleManager.index()
     menus = Context.menus(request.user)
@@ -364,6 +411,8 @@ def role_index(request):
     return TemplateResponse(request, "change_list.html", context=context)
 
 
+@login_required
+@permission_need(ADMIN)
 def new_role(request):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -377,6 +426,8 @@ def new_role(request):
         return HttpResponseRedirect(role_index_url)
 
 
+@login_required
+@permission_need(ADMIN)
 def edit_role(request, id):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -389,6 +440,8 @@ def edit_role(request, id):
         return HttpResponseRedirect(reverse('role_index'))
 
 
+@login_required
+@permission_need(ADMIN)
 @require_http_methods(["POST"])
 @csrf_exempt
 @use_kwargs({'id': fields.Int(required=True, validate=lambda id: id > 0)})
@@ -411,6 +464,8 @@ def delete_role(request, id):
 
 
 # Game View Begin   ----------
+@login_required
+@permission_need(ADMIN)
 def game_index(request):
     context = GameManager.index()
     menus = Context.menus(request.user)
@@ -420,6 +475,8 @@ def game_index(request):
     return TemplateResponse(request, "change_list.html", context=context)
 
 
+@login_required
+@permission_need(ADMIN)
 def new_game(request):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -433,6 +490,8 @@ def new_game(request):
         return HttpResponseRedirect(game_index_url)
 
 
+@login_required
+@permission_need(ADMIN)
 def edit_game(request, id):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -445,6 +504,8 @@ def edit_game(request, id):
         return HttpResponseRedirect(reverse('game_index'))
 
 
+@login_required
+@permission_need(ADMIN)
 @require_http_methods(["POST"])
 @csrf_exempt
 @use_kwargs({'id': fields.Int(required=True, validate=lambda id: id > 0)})

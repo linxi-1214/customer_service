@@ -23,7 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'hlt&&$)7y+_$l5wk#-r@bn+vtc3*qn*yd3f8(-r-_oxe9o4$4p'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -108,6 +108,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
+LOGIN_URL = "login"
+
 TIME_ZONE = 'Asia/Shanghai'
 
 USE_I18N = True
@@ -132,3 +134,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = 'static'
 
 AUTH_USER_MODEL = 'customer_service.User'
+
+ADMIN_ROLE = 1
+DATA_ROLE = 2
+SERVICE_ROLE = 3
