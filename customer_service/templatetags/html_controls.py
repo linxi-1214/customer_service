@@ -13,7 +13,7 @@ def control_decorator(control_type):
                 return ''
             wrapped_html = '<div class="form-group {group_css}">\n'
             if field_info.get('label') and field_info.get('type') != 'group_button':
-                wrapped_html += '    <label class="col-form-label">{label}</label>\n'
+                wrapped_html += '    <label class="col-form-label{label_class}">{label}</label>\n'
             wrapped_html += generate_func(field_info)
             if field_info.get('help_text'):
                 wrapped_html += '    <small id="{help_id}" class="form-text text-muted">{help_text}</small>\n'
@@ -22,7 +22,8 @@ def control_decorator(control_type):
             wrapped_html = wrapped_html.format(help_id=field_info.get('help_id', ''),
                                                help_text=field_info.get('help_text', ''),
                                                label=field_info.get('label', ''),
-                                               group_css=field_info.get('group_css', '')
+                                               group_css=field_info.get('group_css', ''),
+                                               label_class=' %s' % field_info.get("label_class", '')
                                                )
             return mark_safe(wrapped_html)
         return wrapper
@@ -137,7 +138,8 @@ def generate_file_upload(field_info):
 
 @control_decorator('multi_select')
 def _multi_select_html(field_info):
-    _html = '<select multiple class="form-control{extra_class}" kind="form-select" {extra_style} id="{id}" name="{name}" {disabled}>\n'.format(
+    _html = '<select multiple class="form-control{extra_class}" kind="form-select" {extra_style} ' \
+            'id="{id}" name="{name}" {disabled}>\n'.format(
         id=field_info.get('id', ''), name=field_info.get('name', ''),
         extra_class=" %s" % field_info.get('extra_css') if field_info.get('extra_css') else '',
         extra_style='style={%s}' % field_info.get('extra_style') if field_info.get('extra_style') else '',
@@ -161,11 +163,13 @@ def generate_multi_select(field_info):
 
 @control_decorator('select')
 def _select_html(field_info):
-    _html = '<select class="form-control{extra_class}" kind="form-select" {extra_style} id="{id}" name="{name}" {disabled}>\n'.format(
+    _html = '<select class="form-control{extra_class}" kind="form-select" {extra_style} id="{id}"' \
+            ' name="{name}" {disabled} {attrs}>\n'.format(
         id=field_info.get('id', ''), name=field_info.get('name', ''),
         extra_class=" %s" % field_info.get('extra_css') if field_info.get('extra_css') else '',
         extra_style='style={%s}' % field_info.get('extra_style') if field_info.get('extra_style') else '',
-        disabled=field_info.get('disabled', '')
+        disabled=field_info.get('disabled', ''),
+        attrs=" ".join(['%s="%s"' % attr for attr in field_info.get('attrs', {}).items()])
     )
     _html += '    <option></option>\n'
     for option in field_info.get('options'):
@@ -200,11 +204,12 @@ def generate_password(field_info):
 
 @control_decorator('text')
 def _text_html(field_info):
-    _html = '<input type="text" class="form-control" id="{id}" placeholder="{placeholder}" name="{name}"' \
-            ' aria-describedby="{help_id}" value="{value}" {disabled}>'.format(
+    _html = '<input type="text" class="form-control{extra_class}" id="{id}" placeholder="{placeholder}" name="{name}"' \
+            ' aria-describedby="{help_id}" {attrs} value="{value}" {disabled}>'.format(
         id=field_info.get('id', ''), placeholder=field_info.get('placeholder', ''),
         name=field_info.get('name', ''), help_id=field_info.get('help_id', ''), value=field_info.get('value', ''),
-        disabled=field_info.get('disabled', '')
+        disabled=field_info.get('disabled', ''), extra_class=' %s' % field_info.get('extra_class', ''),
+        attrs=" ".join(['%s="%s"' % attr for attr in field_info.get('attrs', {}).items()])
     )
 
     return _html

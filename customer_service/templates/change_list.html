@@ -22,6 +22,7 @@
             <div class="panel panel-primary">
                 <div class="panel-heading">{{ panel_heading }}</div>
                 <div class="panel-body">
+                    {% include "includes/table_top_action.html" with top_form=table.top_form %}
                     {% include "table.html" %}
                 </div>
             </div>

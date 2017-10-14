@@ -59,6 +59,83 @@ class PlayerManager:
 
         return bind_user_str
 
+
+    @staticmethod
+    def _generate_top_form():
+        """
+        返回玩家列表的查询表单
+        :return:
+        """
+
+        game_objs = Game.objects.all()
+
+        game_obj_dict = [
+            {'label': _game_obj.name, "value": _game_obj.id} for _game_obj in game_objs
+        ]
+
+        top_form = {
+            "method": "post",
+            "action": "#",
+            "fields": [
+                {
+                    "type": "text",
+                    "label": u"账号",
+                    "name": "account",
+                    "id": "_account",
+                    "attrs": {"style": "width: 120px; margin-right: 10px"}
+                },
+                {
+                    "type": "select",
+                    "label": u"游戏",
+                    "name": "game_name",
+                    "id": "_game_name",
+                    "options": game_obj_dict,
+                    "attrs": {'style': "margin-right: 10px"}
+                },
+                {
+                    "type": "text",
+                    "label": u"&nbsp;&nbsp;&nbsp;手机号",
+                    "name": "mobile",
+                    "id": "_mobile",
+                    "attrs": {'style': "margin-right: 10px"}
+                },
+                {
+                    "type": "text",
+                    "label": u"充值金额",
+                    "name": "charge_money_min",
+                    "id": "_charge_money_min",
+                    "placeholder": "¥",
+                    "attrs": {
+                        "style": "width: 80px;"
+                    }
+                },
+                {
+                    "type": "text",
+                    "label": u"-",
+                    "name": "charge_money_max",
+                    "id": "_charge_money_max",
+                    "placeholder": "¥",
+                    "attrs": {
+                        "style": "width: 80px; margin-right: 10px;",
+                    }
+                },
+                {
+                    "type": "button",
+                    "button_type": "button",
+                    "label": u'查&nbsp;&nbsp;询 <i class="fa fa-search"></i>',
+                    "click": "player_query();"
+                },
+                {
+                    "type": "button",
+                    "button_type": "button",
+                    "label": u'导出到 EXCEL <i class="fa  fa-sign-out"></i>',
+                    "extra_class": "btn-warning pull-right",
+                    "click": "export_player();"
+                }
+            ]
+        }
+        return top_form
+
     @staticmethod
     def index(user):
         sql = """
@@ -276,6 +353,7 @@ class PlayerManager:
                     {'text': u'操作'}
                 ],
                 'tbody': tbody,
+                'top_form': PlayerManager._generate_top_form()
             },
             'modal': {
                 "id": "_player_delete_modal"
