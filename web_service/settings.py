@@ -83,6 +83,8 @@ DATABASES = {
     }
 }
 
+DATABASE_TYPE = "sqlite3"
+
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -135,6 +137,17 @@ STATIC_ROOT = 'static'
 
 AUTH_USER_MODEL = 'customer_service.User'
 
+# app settings below
 ADMIN_ROLE = 1
 DATA_ROLE = 2
 SERVICE_ROLE = 3
+
+PROCESS = {
+    "looked": 0, "contacted": 1, "connected": 2, "success": 3
+}
+
+PROCESS_DESC = {
+    "looked": "已查看", "contacted": "已联系", "connected": "已接通", "success": "联系成功"
+}
+
+

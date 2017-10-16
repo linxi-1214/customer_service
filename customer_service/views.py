@@ -80,6 +80,29 @@ def user_logout(request):
     return HttpResponseRedirect(login_url)
 
 
+@csrf_exempt
+@login_required
+@require_http_methods(["POST", "GET"])
+def user_report(request):
+    menus = Context.menus(request.user)
+    if request.method == "GET":
+        context = ServiceManager.index_display()
+        context.update(menus=menus)
+
+        return TemplateResponse(request, "customer_service.html", context=context)
+    else:
+        user_id = request.POST.get('account')
+        date_range = request.POST.get('time-range')
+
+        date_range = [_d.strip() for _d in date_range.split('~')]
+        labels, process_data_list = ServiceManager.report_display(user_id, date_range)
+        json_data = {
+            "labels": labels, "line_data": process_data_list
+        }
+
+        return HttpResponse(json.dumps(json_data), content_type='application/json')
+
+
 # Menu View Begin   ----------
 @login_required
 @permission_need(ADMIN)
@@ -223,6 +246,17 @@ def import_player(request):
                                         stored_name, file.name)
 
         return HttpResponse(json.dumps({'msg': 'OK'}))
+
+
+@login_required
+@permission_need([ADMIN])
+def import_detail(request, import_id):
+    import_result = PlayerManager.import_result_query(import_id)
+
+    if import_result is None:
+        import_result = '[]'
+
+    return HttpResponse(import_result, content_type='application/json')
 
 
 @csrf_exempt

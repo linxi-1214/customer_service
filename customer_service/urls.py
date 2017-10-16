@@ -10,6 +10,7 @@ urlpatterns = [
     url(r'user/settings', views.user_settings, name='user_settings'),
     url(r'message-add/$', views.new_message, name='add_message'),
     url(r'message-list/$', views.message_list, name='message'),
+    url(r'user/report/$', views.user_report, name='user_report'),
 
     # Player View Begin
     url(r'player/index/$', views.player_index, name='player_index'),
@@ -19,6 +20,7 @@ urlpatterns = [
     url(r'player/import/$', views.import_player, name='import_player'),
     url(r'player/export/$', views.export_player, name='export_player'),
     url(r'player/contract/$', views.contract_player, name='contract_player'),
+    url(r'player/import-result/([0-9]+)/$', views.import_detail, name='import_detail'),
     # Player View End
 
     # 游戏 BEGIN

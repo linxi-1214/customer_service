@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <style>
+        .delete-icon-button {
+            margin-top: 26px;
+        }
+    </style>
+    {% for css in media.css %}
+        {{ css|safe }}
+    {% endfor %}
+{% endblock %}
+
+{% block footer_js %}
+    {% for js in media.js %}
+        {{ js|safe }}
+    {% endfor %}
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+    {% include "breadcrumb.html" %}
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="panel panel-yellow">
+                <div class="panel-heading"><i class="fa fa-star"> 选择客服查看报告</i></div>
+                <div class="panel-body">
+                    {% include "form.html" %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
+            <div id="_customer-service-chart"></div>
+        </div>
+    </div>
+{% endblock %}

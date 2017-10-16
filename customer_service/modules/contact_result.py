@@ -2,6 +2,7 @@ from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 
 from django.forms.widgets import Media
+from django.conf import settings
 
 from customer_service.models import ContractResult
 
@@ -10,8 +11,16 @@ class ContactResultManager:
 
     @staticmethod
     def add_display():
-        media = Media(js=['common/selector2/js/select2.js', 'js/result.js'],
+        media = Media(js=['common/selector2/js/select2.full.js', 'js/result.js'],
                       css={'all': ['common/selector2/css/select2.min.css']})
+
+        options = [
+            {
+                "label": settings.PROCESS_DESC[process[0]],
+                "value": process[1],
+            } for process in settings.PROCESS.items()
+        ]
+
         return {
             'breadcrumb_items': [
                 {'href': reverse('result_index'), 'label': u'联系结果列表'},
@@ -49,6 +58,15 @@ class ContactResultManager:
                         "help_text": u'勾选该选项，则客服在选择了该联系结果的时候，玩家将绑定到该客服'
                     },
                     {
+                        "type": "select",
+                        "label": u"联系进度绑定",
+                        "help_id": "_result_bind",
+                        "help_text": u"例如：联系结果是：未接通，绑定进度：联系过； 用户挂断，绑定进度：接通。",
+                        "name": "result_bind",
+                        "id": "_result_bind",
+                        "options": options
+                    },
+                    {
                         "type": "submit",
                         "button_type": "submit",
                         "label": u"提交"
@@ -64,8 +82,16 @@ class ContactResultManager:
         except ObjectDoesNotExist:
             return None
 
-        media = Media(js=['common/selector2/js/select2.js', 'js/user.js'],
+        media = Media(js=['common/selector2/js/select2.full.js', 'js/user.js'],
                       css={'all': ['common/selector2/css/select2.min.css']})
+
+        options = [
+            {
+                "label": settings.PROCESS_DESC[process[0]],
+                "value": process[1],
+                "selected": result_obj.process == process[1]
+            } for process in settings.PROCESS.items()
+        ]
 
         return {
             'breadcrumb_items': [
@@ -105,6 +131,15 @@ class ContactResultManager:
                         "help_text": u'勾选该选项，则客服在选择了该联系结果的时候，玩家将绑定到该客服'
                     },
                     {
+                        "type": "select",
+                        "label": u"联系进度绑定",
+                        "help_id": "_result_bind",
+                        "help_text": u"例如：联系结果是：未接通，绑定进度：联系过； 用户挂断，绑定进度：接通。",
+                        "name": "result_bind",
+                        "id": "_result_bind",
+                        "options": options
+                    },
+                    {
                         "type": "button",
                         "button_type": "button",
                         "label": u"取消"
@@ -123,6 +158,7 @@ class ContactResultManager:
         result = params.get("result")
         bind_text = params.get('bind', 0)
         bind = int(bind_text) == 1
+        process = params.get('result_bind')
 
         try:
             ContractResult.objects.get(id=result_id)
@@ -130,7 +166,7 @@ class ContactResultManager:
             return 0
 
         ContractResult.objects.filter(id=result_id).update(
-            result=result, bind=bind
+            result=result, bind=bind, process=process
         )
 
         return 1
@@ -212,8 +248,9 @@ class ContactResultManager:
         result = params.get("result")
         bind_text = params.get('bind', 0)
         bind = int(bind_text) == 1
+        process = params.get('result_bind')
 
-        result_obj = ContractResult(result=result, bind=bind)
+        result_obj = ContractResult(result=result, bind=bind, process=process)
 
         result_obj.save()
 

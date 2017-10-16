@@ -1,5 +1,6 @@
 import os
 import re
+import json
 from datetime import datetime
 from collections import namedtuple
 
@@ -636,8 +637,10 @@ class PlayerManager:
         import_records = PlayerImport.objects.all()
 
         media = Media(
-            js=['js/player.js'],
-            css={'all': ['common/fileupload/css/fileinput.css', 'css/player.css']}
+            js=['common/selector2/js/select2.full.js', 'js/player.js'],
+            css={'all': ['common/fileupload/css/fileinput.css',
+                         'common/selector2/css/select2.min.css',
+                         'css/player.css']}
         )
 
         header_media = Media(
@@ -658,16 +661,24 @@ class PlayerManager:
                     {'text': import_record.path},
                     {'text': import_record.filename},
                     {'text': import_record.import_time.strftime('%Y-%m-%d %H:%M:%S')},
-                    {'text': import_record.notes}
+                    {'text': import_record.notes or '--'}
                 ],
                 'actions': [
                     {
-                        'icon': 'fa-list-alt',
+                        'icon': 'fa-play-circle',
                         'tooltip': u'查看导入结果',
                         'label': u'',
+                        'theme': 'btn-warning',
                         # 'href': reverse('import_detail', args=(import_record.id,))
-                        'href': '#'
+                        'href': '#',
+                        'func': 'import_result_detail("%s");' % reverse('import_detail', args=(import_record.id, ))
                     },
+                    {
+                        'icon': 'fa-download',
+                        'tooltip': u'下载',
+                        'href': '#',
+                        'theme': 'btn-warning'
+                    }
                 ]
             } for import_record in import_records
             ]
@@ -693,7 +704,7 @@ class PlayerManager:
                 'js': header_media.render_js()
             },
             'table': {
-                'id': '_player-table',
+                'id': '_player-import-table',
                 'headers': [
                     {'text': u'路径'}, {'text': u'文件名'}, {'text': u'导入时间'},
                     {'text': u'备注'}, {'text': u'操作'}
@@ -1102,111 +1113,95 @@ class PlayerManager:
 
         titles = sheet.row(1)
 
-        title_index = {
-            'account': -1,
-            'charge_money': -1,
-            'charge_time': -1,
-            'mobile': -1,
-            'come_from': -1,
-            'register_name': -1,
-            'register_time': -1,
-            'last_login_game': -1,
-            'last_login_time': -1
-        }
+        title_index = {}
 
         for ind, title in enumerate(titles):
-            if title.value == '玩家账号':
-                title_index['account'] = ind
-            elif title.value == '最近登陆时间':
-                title_index['last_login_time'] = ind
-            elif title.value == '最近充值金额':
-                title_index['charge_money'] = ind
-            elif title.value == '最近充值时间':
-                title_index['charge_time'] = ind
-            elif title.value == '注册时间':
-                title_index['register_time'] = ind
-            elif title.value == '手机':
-                title_index['mobile'] = ind
-            elif title.value == '所属渠道':
-                title_index['come_from'] = ind
-            elif title.value == '注册游戏':
-                title_index['register_name'] = ind
-            elif title.value == '最近登录游戏':
-                title_index['last_login_game'] = ind
+            title_index[title.value] = ind
 
+        import_result_error = []
         for row_ind in range(2, sheet.nrows):
             player_data = sheet.row(row_ind)
-            account_col = player_data[title_index['account']]
+            account_col = player_data[title_index[u'玩家账号']]
+            mobile = player_data[title_index[u'手机']]
 
             account = '%d' % int(account_col.value) if account_col.ctype == xlrd.XL_CELL_NUMBER else account_col.value
-            mobile = player_data[title_index['mobile']].value
-            come_from = player_data[title_index['come_from']].value
-            charge_money = player_data[title_index['charge_money']].value
-            charge_time = player_data[title_index['charge_time']].value
-            last_login_game = player_data[title_index['last_login_game']].value
-            last_login_time = player_data[title_index['last_login_time']].value
-            register_name = player_data[title_index['register_name']].value
-            register_time = player_data[title_index['register_time']].value
+            mobile = '%d' % int(mobile.value) if mobile.ctype == xlrd.XL_CELL_NUMBER else mobile.value
+            come_from = player_data[title_index[u'所属渠道']].value
+            charge_money = player_data[title_index[u'最近充值金额']].value
+            charge_time = player_data[title_index[u'最近充值时间']].value
+            last_login_game = player_data[title_index[u'最近登录游戏']].value
+            last_login_time = player_data[title_index[u'最近登陆时间']].value
+            register_name = player_data[title_index[u'注册游戏']].value
+            register_time = player_data[title_index[u'注册时间']].value
+            game_count = player_data[title_index[u'游戏数量']].value
+            charge_money_total = player_data[title_index[u'充值总额']].value
 
             try:
-                player_obj = Player.objects.get(account=account)
-                player_obj.mobile = mobile
-                player_obj.come_from = mobile
-                player_obj.imported_from = player_import
-                player_obj.save()
-            except ObjectDoesNotExist:
-                player_obj = Player.objects.create(
-                    account=account,
-                    mobile=mobile,
-                    come_from=come_from,
-                    import_from=player_import
-                )
-
-            if register_name.strip() != '':
                 try:
-                    game_obj = Game.objects.get(name=register_name)
+                    player_obj = Player.objects.get(account=account)
+                    player_obj.mobile = mobile
+                    player_obj.come_from = mobile
+                    player_obj.imported_from = player_import
+                    player_obj.charge_money_total = charge_money_total
+                    player_obj.game_count = game_count
+                    player_obj.save()
                 except ObjectDoesNotExist:
-                    game_obj = Game.objects.create(name=register_name)
-
-                try:
-                    register_info_obj = RegisterInfo.objects.get(
-                        player=player_obj,
-                        game=game_obj
+                    player_obj = Player.objects.create(
+                        account=account,
+                        mobile=mobile,
+                        come_from=come_from,
+                        import_from=player_import, game_count=game_count, charge_money_total=charge_money_total
                     )
-                    register_info_obj.register_time = register_time
-                    register_info_obj.save()
-                except ObjectDoesNotExist:
-                    RegisterInfo.objects.create(
+
+                if register_name.strip() != '':
+                    try:
+                        game_obj = Game.objects.get(name=register_name)
+                    except ObjectDoesNotExist:
+                        game_obj = Game.objects.create(name=register_name)
+
+                    try:
+                        register_info_obj = RegisterInfo.objects.get(
+                            player=player_obj,
+                            game=game_obj
+                        )
+                        register_info_obj.register_time = register_time
+                        register_info_obj.save()
+                    except ObjectDoesNotExist:
+                        RegisterInfo.objects.create(
+                            player=player_obj,
+                            game=game_obj,
+                            register_time=register_time
+                        )
+
+                    AccountLog.objects.create(
                         player=player_obj,
                         game=game_obj,
-                        register_time=register_time
+                        money=charge_money,
+                        charge_time=charge_time,
+                        recorder=user
                     )
 
-                AccountLog.objects.create(
-                    player=player_obj,
-                    game=game_obj,
-                    money=charge_money,
-                    charge_time=charge_time,
-                    recorder=user
-                )
+                if last_login_game.strip() != '':
+                    try:
+                        last_login_game_obj = Game.objects.get(name=last_login_game)
+                    except ObjectDoesNotExist:
+                        last_login_game_obj = Game.objects.create(name=last_login_game)
 
-            if last_login_game.strip() != '':
-                try:
-                    last_login_game_obj = Game.objects.get(name=last_login_game)
-                except ObjectDoesNotExist:
-                    last_login_game_obj = Game.objects.create(name=last_login_game)
+                    PlayerLoginInfo.objects.create(
+                        player=player_obj,
+                        game=last_login_game_obj,
+                        login_time=last_login_time
+                    )
+            except Exception as err:
+                import_result_error.append({
+                    'account': account,
+                    'error': err
+                })
 
-                PlayerLoginInfo.objects.create(
-                    player=player_obj,
-                    game=last_login_game_obj,
-                    login_time=last_login_time
-                )
-
-        return notes
+        return notes, import_result_error
 
     @staticmethod
     def import_player(user, time_obj, stored_path, stored_name, filename):
-
         player_import_obj = PlayerImport.objects.create(
             filename=filename,
             path=stored_path,
@@ -1214,10 +1209,22 @@ class PlayerManager:
             import_time=time_obj,
         )
 
-        notes = PlayerManager._import_player(user, stored_path, stored_name, player_import_obj)
+        notes, import_result_error = PlayerManager._import_player(user, stored_path, stored_name, player_import_obj)
 
         player_import_obj.notes = notes
+        player_import_obj.result = json.dumps(import_result_error)
         player_import_obj.save()
+
+    @staticmethod
+    def import_result_query(import_id):
+        try:
+            player_import_obj = PlayerImport.objects.get(id=import_id)
+        except ObjectDoesNotExist:
+            return '[]'
+
+        result_list = player_import_obj.result
+
+        return result_list
 
     @staticmethod
     def export_player():

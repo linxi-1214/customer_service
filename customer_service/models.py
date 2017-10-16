@@ -138,6 +138,7 @@ class PlayerImport(models.Model):
     path = models.CharField(null=False, max_length=200, verbose_name=u"文件路径")
     import_time = models.DateTimeField(auto_now=True)
     notes = models.TextField(null=True)
+    result = models.TextField(null=True)
 
     class Meta:
         verbose_name = verbose_name_plural = u"文件导入"
@@ -183,6 +184,7 @@ class ContractResult(models.Model):
     result = models.CharField(max_length=200, null=False)
     bind = models.BooleanField(default=False, null=False)
     show = models.BooleanField(default=True, null=False)
+    process = models.IntegerField(default=-1, null=True)
 
     class Meta:
         verbose_name = verbose_name_plural = u'联系结果'

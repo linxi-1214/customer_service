@@ -45,6 +45,40 @@ function player_query() {
     return false;
 }
 
+function import_player_query() {
+    var filename = $("#_filename").val();
+
+    $("#_player-import-table").DataTable().column(2).search(
+        filename, true, true
+    ).draw();
+
+    $('#_player-import-table').DataTable().draw();
+}
+
+function import_result_detail(url) {
+    $.getJSON(url, function(data, status) {
+        if (status == 'success') {
+            var modal = $("#_import-result-modal");
+            var _html = "";
+            if (data.length == 0) {
+                _html = '<div class="alert alert-success">';
+                _html += '<h4><i class="fa fa-check-circle"></i> 全部导入成功！</h4>';
+                _html += '</div>';
+            } else {
+                _html = '<table class="table">';
+                _html += '<thead><tr><th>账号</th><th>导入失败原因</th></tr></thead>';
+                _html += '<tbody>';
+                $.each(data, function (ind, result_obj) {
+                    _html += '<tr><td>' + result_obj.account + '</td><td>' + result_obj.error + '</td></tr>';
+                });
+                _html += '</tbody></table>';
+            }
+            modal.find('.modal-body').html(_html);
+            modal.modal('show');
+        }
+    });
+}
+
 /* 当登记玩家信息的时候，添加注册游戏 */
 function add_register_game() {
     if ($("div.register-game-none").length == 0)
@@ -127,6 +161,34 @@ $(function () {
                  ( min <= money   && isNaN( max ) ) ||
                  ( min <= money   && money <= max ) )
             {
+                return true;
+            }
+            return false;
+        }
+    );
+
+    $.fn.dataTable.ext.search.push(
+        function( settings, data, dataIndex ) {
+            var time_range = $('#_import-time-input').val();
+            if (time_range == "")
+                return true;
+            else
+                time_range = time_range.split(' ~ ');
+            var regEx = new RegExp("\\-","gi");
+            var start_time = time_range[0].replace(regEx, "/");
+            var end_time = time_range[1].replace(regEx, "/");
+
+            start_time = new Date(start_time);
+            end_time = new Date(end_time);
+
+            var import_time = data[3].replace(regEx, "/"); // use data for the age column
+
+            import_time = new Date(import_time);
+
+            if (isNaN(import_time))
+                return true;
+
+            if (start_time <= import_time && import_time <= end_time ) {
                 return true;
             }
             return false;
