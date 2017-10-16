@@ -17,8 +17,10 @@ function delete_menu_submit(url, menu_id) {
     $.post(url, {id: menu_id}, function (data, status) {
         if (status == "success") {
             // $("#_game_del_modal_submit").modal('hide');
-            alert("删除成功！")
-        }
+            alert("删除成功！");
+            window.location.reload();
+        } else
+            alert("删除失败！");
     })
 }
 $(function () {

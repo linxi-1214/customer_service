@@ -18,7 +18,10 @@ function delete_result_submit(url, result_id) {
     $.post(url, {id: result_id}, function (data, status) {
         if (status == "success") {
             // $("#_game_del_modal_submit").modal('hide');
-            alert("删除成功！")
+            alert("删除成功！");
+            window.location.reload();
+        } else {
+            alert("删除失败！");
         }
     })
 }

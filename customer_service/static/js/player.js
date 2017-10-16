@@ -4,6 +4,7 @@
 var game_div_html;
 var game_div_index = 0;
 var game_count;
+var table;
 
 function delete_player(url, player_id, player_label) {
     var modal = $("#_player_delete_modal");
@@ -23,6 +24,25 @@ function delete_player_submit(url, player_id) {
             alert("删除成功！")
         }
     })
+}
+
+function player_query() {
+    var account = $("#_account").val();
+    var game = $("#_game_name option:selected").text();
+    var mobile = $("#_mobile").val();
+
+    $('#_player-table').DataTable().column( 1 ).search(
+        account, true, true
+    ).draw();
+    $('#_player-table').DataTable().column( 5).search(
+        game, true, true
+    ).draw();
+    $('#_player-table').DataTable().column( 3 ).search(
+        mobile, true, true
+    ).draw();
+
+    $('#_player-table').DataTable().draw();
+    return false;
 }
 
 /* 当登记玩家信息的时候，添加注册游戏 */
@@ -95,6 +115,25 @@ $(function () {
     } catch (e) {
         console.log(e.message)
     }
+
+    $.fn.dataTable.ext.search.push(
+        function( settings, data, dataIndex ) {
+            var min = parseInt( $('#_charge_money_min').val(), 10 );
+            var max = parseInt( $('#_charge_money_max').val(), 10 );
+            var money = parseFloat( data[12] ) || 0; // use data for the age column
+
+            if ( ( isNaN( min ) && isNaN( max ) ) ||
+                 ( isNaN( min ) && money <= max ) ||
+                 ( min <= money   && isNaN( max ) ) ||
+                 ( min <= money   && money <= max ) )
+            {
+                return true;
+            }
+            return false;
+        }
+    );
+
+
     $(".form-group").tooltip({
         selector: "[data-toggle=tooltip]",
         container: "body"

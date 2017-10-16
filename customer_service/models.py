@@ -182,6 +182,7 @@ class Player(models.Model):
 class ContractResult(models.Model):
     result = models.CharField(max_length=200, null=False)
     bind = models.BooleanField(default=False, null=False)
+    show = models.BooleanField(default=True, null=False)
 
     class Meta:
         verbose_name = verbose_name_plural = u'联系结果'

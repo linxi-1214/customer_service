@@ -18,7 +18,7 @@ class UserManager:
             } for role in role_objs
             ]
 
-        media = Media(js=['common/selector2/js/select2.js', 'js/user.js'],
+        media = Media(js=['common/selector2/js/select2.full.js', 'js/user.js'],
                       css={'all': ['common/selector2/css/select2.min.css']})
         return {
             'breadcrumb_items': [

@@ -121,10 +121,10 @@ def edit_menu(request, id):
         return HttpResponseRedirect(reverse('menu_index'))
 
 
+@csrf_exempt
 @login_required
 @permission_need(ADMIN)
 @require_http_methods(["POST"])
-@csrf_exempt
 @use_kwargs({'id': fields.Int(required=True, validate=lambda id: id > 0)})
 def delete_menu(request, id):
     menu_obj = MenuManager.delete(id)
@@ -132,9 +132,9 @@ def delete_menu(request, id):
     if request.is_ajax():
         content = {'code': 0}
         if menu_obj is None:
-            content.update(message=u'游戏删除成功！')
+            content.update(message=u'菜单删除成功！')
         else:
-            content.update(message=u'游戏［ %s ］删除成功！' % menu_obj.name)
+            content.update(message=u'菜单［ %s ］删除成功！' % menu_obj.name)
         return HttpResponse(content=json.dumps(content), content_type='application/json')
 
     else:
@@ -225,10 +225,10 @@ def import_player(request):
         return HttpResponse(json.dumps({'msg': 'OK'}))
 
 
+@csrf_exempt
 @login_required
 @permission_need([ADMIN, DATA_USER])
 @require_http_methods(["POST"])
-@csrf_exempt
 @use_kwargs({'id': fields.Int(required=True, validate=lambda id: id > 0)})
 def delete_player(request, id):
     player_obj = PlayerManager.delete(id)
@@ -312,10 +312,10 @@ def edit_result(request, id):
         return HttpResponseRedirect(reverse('result_index'))
 
 
+@csrf_exempt
 @login_required
 @permission_need(ADMIN)
 @require_http_methods(["POST"])
-@csrf_exempt
 @use_kwargs({'id': fields.Int(required=True, validate=lambda id: id > 0)})
 def delete_result(request, id):
     result_obj = ContactResultManager.delete(id)
@@ -325,7 +325,7 @@ def delete_result(request, id):
         if result_obj is None:
             content.update(message=u'联系结果删除成功！')
         else:
-            content.update(message=u'联系结果［ %s ］删除成功！' % result_obj.loginname)
+            content.update(message=u'联系结果［ %s ］删除成功！' % result_obj.result)
         return HttpResponse(content=json.dumps(content), content_type='application/json')
 
     else:
@@ -376,10 +376,10 @@ def edit_user(request, id):
         return HttpResponseRedirect(reverse('user_index'))
 
 
+@csrf_exempt
 @login_required
 @permission_need(ADMIN)
 @require_http_methods(["POST"])
-@csrf_exempt
 @use_kwargs({'id': fields.Int(required=True, validate=lambda id: id > 0)})
 def delete_user(request, id):
     user_obj = UserManager.delete(id)
@@ -440,10 +440,10 @@ def edit_role(request, id):
         return HttpResponseRedirect(reverse('role_index'))
 
 
+@csrf_exempt
 @login_required
 @permission_need(ADMIN)
 @require_http_methods(["POST"])
-@csrf_exempt
 @use_kwargs({'id': fields.Int(required=True, validate=lambda id: id > 0)})
 def delete_role(request, id):
     role_obj = RoleManager.delete(id)
@@ -504,10 +504,10 @@ def edit_game(request, id):
         return HttpResponseRedirect(reverse('game_index'))
 
 
+@csrf_exempt
 @login_required
 @permission_need(ADMIN)
 @require_http_methods(["POST"])
-@csrf_exempt
 @use_kwargs({'id': fields.Int(required=True, validate=lambda id: id > 0)})
 def delete_game(request, id):
     game_obj = GameManager.delete(id)

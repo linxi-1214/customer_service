@@ -171,7 +171,7 @@ class ContactResultManager:
                         'href': '#',
                         'icon': 'fa-trash-o',
                         'tooltip': u'删除',
-                        'func': 'delete_user("{url}", {id}, "{label}")'.format(
+                        'func': 'delete_result("{url}", {id}, "{label}")'.format(
                             url=delete_url, id=result_obj.id, label=result_obj.result
                         )
                     }

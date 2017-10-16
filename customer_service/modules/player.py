@@ -59,7 +59,6 @@ class PlayerManager:
 
         return bind_user_str
 
-
     @staticmethod
     def _generate_top_form():
         """
@@ -123,7 +122,7 @@ class PlayerManager:
                     "type": "button",
                     "button_type": "button",
                     "label": u'查&nbsp;&nbsp;询 <i class="fa fa-search"></i>',
-                    "click": "player_query();"
+                    "click": "player_query(); return false;"
                 },
                 {
                     "type": "button",
@@ -288,7 +287,14 @@ class PlayerManager:
                 return val
 
         delete_url = reverse('delete_player')
-        media = Media(js=['js/player.js'])
+        media = Media(js=[
+            'js/player.js',
+            'vendor/datatables/js/dataTables.buttons.min.js',
+            'vendor/xlsx/xlsx.full.min.js',
+            'vendor/xlsx/Blob.js', 'vendor/xlsx/FileSaver.js',
+            'vendor/xlsx/swfobject.js', 'vendor/xlsx/downloadify.min.js', 'vendor/xlsx/base64.min.js',
+            'js/export.js'
+        ])
         tbody = [
             {
                 'columns': [
@@ -658,7 +664,7 @@ class PlayerManager:
                     {
                         'icon': 'fa-list-alt',
                         'tooltip': u'查看导入结果',
-                        'label': u'查看',
+                        'label': u'',
                         # 'href': reverse('import_detail', args=(import_record.id,))
                         'href': '#'
                     },
