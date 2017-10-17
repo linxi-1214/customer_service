@@ -28,17 +28,28 @@ class ServiceManager:
         user_objs = User.objects.all()
         media = Media(js=['common/selector2/js/select2.full.js',
                           'vendor/jqplot/jquery.jqplot.min.js',
+                          'vendor/jqplot/jqplot.dateAxisRenderer.js',
+                          'vendor/jqplot/jqplot.canvasAxisTickRenderer.js',
+                          'vendor/jqplot/jqplot.canvasTextRenderer.js',
+                          'vendor/datatables/js/jquery.dataTables.min.js',
+                          'vendor/datatables/js/dataTables.bootstrap4.min.js',
+                          'common/date/dateRange.js',
                           'js/customer_service.js'],
-                      css={'all': ['common/selector2/css/select2.min.css',
-                                   'vendor/jqplot/jquery.jqplot.min.css'
-                                   ]})
+                      css={'all': [
+                          # 'vendor/datatables/css/jquery.dataTables.min.css',
+                          'vendor/bootstrap-social/bootstrap-social.css',
+                          'vendor/datatables/css/dataTables.bootstrap4.min.css',
+                          'common/selector2/css/select2.min.css',
+                          'vendor/jqplot/jquery.jqplot.min.css',
+                          'common/date/dateRange.css'
+                      ]})
         options = [
             {
                 "label": "%s%s" % (user_obj.first_name or '', user_obj.last_name or '') or user_obj.loginname,
                 "value": user_obj.id
             } for user_obj in user_objs
         ]
-
+        process_order = ['looked', 'contacted', 'connected', 'success']
         context = {
             'breadcrumb_items': [
                 {
@@ -51,6 +62,12 @@ class ServiceManager:
                 'js': media.render_js(),
                 "css": media.render_css()
             },
+            'chart_series': [
+                {
+                    "label": settings.PROCESS_DESC[process],
+                    "value": ind
+                } for ind, process in enumerate(process_order)
+            ],
             "form": {
                 "method": "post",
                 "action": "#",
@@ -81,7 +98,7 @@ class ServiceManager:
                                 "button_type": "button",
                                 "click": '"generate_date(\'week\');"',
                                 "icon": "fa-minus-circle",
-                                "extra_class": "btn-info form-control delete-icon-button",
+                                "extra_class": "btn-primary form-control delete-icon-button",
                                 "label": u'近一周',
                                 "tooltip_position": 'right',
                                 "group_css": "col-lg-1"
@@ -90,7 +107,7 @@ class ServiceManager:
                                 "type": "group_button",
                                 "button_type": "button",
                                 "click": '"generate_date(\'one month\');"',
-                                "extra_class": "btn-info form-control delete-icon-button",
+                                "extra_class": "btn-primary form-control delete-icon-button",
                                 "label": u'近一月',
                                 "tooltip_position": 'right',
                                 "group_css": "col-lg-1"
@@ -99,7 +116,7 @@ class ServiceManager:
                                 "type": "group_button",
                                 "button_type": "button",
                                 "click": '"generate_date(\'three month\');"',
-                                "extra_class": "btn-info form-control delete-icon-button",
+                                "extra_class": "btn-primary form-control delete-icon-button",
                                 "label": u'近三月',
                                 "tooltip_position": 'right',
                                 "group_css": "col-lg-1"
@@ -109,6 +126,7 @@ class ServiceManager:
                     {
                         "type": "button",
                         "label": u'<i class="fa fa-bar-chart-o"></i> 查看报告',
+                        "extra_class": "btn-warning btn-sm btn-block",
                         "button_type": "button",
                         "click": 'draw_report("%s");' % reverse('user_report')
                     }
@@ -155,8 +173,6 @@ class ServiceManager:
                 else:
                     query_sql = query_sql.format(other_condition='')
 
-                print(query_sql)
-
                 cursor.execute(query_sql, (start_date,
                                            end_date,
                                            user_id,
@@ -175,26 +191,40 @@ class ServiceManager:
         end_date = datetime.strptime(end_date, '%Y-%m-%d')
 
         ret_data_list = []
-        labels = []
-        label_collect = False
+        labels = [settings.PROCESS_DESC[k] for k in settings.PROCESS]
+        process_data_dict = {
+            "titles": ['时间'],
+            "values_dict": {},
+            "values": []
+        }
         for process in process_order:
             current_date = start_date
-            print(current_date, end_date)
             while current_date <= end_date:
                 if process not in ret_data:
                     ret_data[process] = {}
                 time_key = current_date.strftime('%Y-%m-%d')
-                if not label_collect:
-                    labels.append(time_key)
                 if time_key not in ret_data[process]:
                     ret_data[process].update({time_key: 0})
 
                 current_date += timedelta(days=1)
-            label_collect = True
+
+            for time_key in ret_data[process]:
+                if time_key in process_data_dict['values_dict']:
+                    process_data_dict['values_dict'][time_key].append(ret_data[process][time_key])
+                else:
+                    process_data_dict['values_dict'][time_key] = [ret_data[process][time_key]]
+            process_data_dict["titles"].append(settings.PROCESS_DESC[process])
 
             process_data_list = [
                 [process_data[0], process_data[1]] for process_data in ret_data[process].items()
             ]
             ret_data_list.append(process_data_list)
 
-        return labels, ret_data_list
+        for time_key in process_data_dict['values_dict']:
+            tmp_list = [time_key]
+            tmp_list.extend(process_data_dict['values_dict'][time_key])
+            process_data_dict['values'].append(tmp_list)
+
+        process_data_dict.pop('values_dict')
+
+        return labels, ret_data_list, process_data_dict

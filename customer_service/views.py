@@ -95,9 +95,9 @@ def user_report(request):
         date_range = request.POST.get('time-range')
 
         date_range = [_d.strip() for _d in date_range.split('~')]
-        labels, process_data_list = ServiceManager.report_display(user_id, date_range)
+        labels, process_data_list, process_data_dict = ServiceManager.report_display(user_id, date_range)
         json_data = {
-            "labels": labels, "line_data": process_data_list
+            "labels": labels, "line_data": process_data_list, "table_data": process_data_dict
         }
 
         return HttpResponse(json.dumps(json_data), content_type='application/json')
@@ -286,7 +286,6 @@ def delete_player(request, id):
 def contract_player(request):
     menus = Context.menus(request.user)
 
-    current_player_id = None
     if request.method == "POST":
         player_id = request.POST.get('player_id')
         PlayerManager.update_contact_result(request.user, player_id, request.POST)

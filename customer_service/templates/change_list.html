@@ -6,8 +6,6 @@
     <link rel="stylesheet" href="{% static 'vendor/bootstrap-social/bootstrap-social.css' %}"/>
     <link rel="stylesheet" href="{% static 'vendor/datatables/css/dataTables.bootstrap4.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'common/selector2/css/select2.min.css' %}"/>
-{#    <link rel="stylesheet" href="{% static 'vendor/datatables/css/fixedColumns.bootstrap4.min.css' %}"/>#}
-{#    <link rel="stylesheet" href="{% static 'vendor/datatables/css/scroller.bootstrap4.min.css' %}"/>#}
 {% endblock %}
 
 {% block content %}
@@ -93,9 +91,7 @@
 {% block footer_js %}
     <script type="text/javascript" src="{% static 'vendor/datatables/js/jquery.dataTables.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'common/selector2/js/select2.full.min.js' %}"></script>
-{#    <script type="text/javascript" src="{% static 'vendor/datatables/js/dataTables.fixedColumns.min.js' %}"></script>#}
     <script type="text/javascript" src="{% static 'vendor/datatables/js/dataTables.bootstrap4.min.js' %}"></script>
-{#    <script type="text/javascript" src="{% static 'vendor/datatables/js/dataTables.scroller.min.js' %}"></script>#}
     {% for script in media.js %}
         {{ script|safe }}
     {% endfor %}

@@ -25,3 +25,22 @@ function delete_result_submit(url, result_id) {
         }
     })
 }
+
+try {
+    $("select[kind=form-select]").select2({
+        placeholder: {
+            id: 0,
+            text: '-- 请选择 --'
+        },
+        allowClear: true,
+        containerCss: {height: '34px'}
+    });
+    $("select[kind=form-select]").on('select2:select', function (e) {
+        var option_value = e.params.data.id;
+        var select_obj = e.target;
+        var option = $($(select_obj).children('[value="' + option_value + '"]'));
+        option.attr({selected: "selected"});
+    });
+} catch (e) {
+    console.log(e.message)
+}

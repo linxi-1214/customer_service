@@ -118,7 +118,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
 
 FILE_UPLOAD_TEMP_DIR = os.path.join(BASE_DIR, 'customer_service/tmp')
 
@@ -143,7 +143,7 @@ DATA_ROLE = 2
 SERVICE_ROLE = 3
 
 PROCESS = {
-    "looked": 0, "contacted": 1, "connected": 2, "success": 3
+    "looked": 1, "contacted": 2, "connected": 3, "success": 4
 }
 
 PROCESS_DESC = {

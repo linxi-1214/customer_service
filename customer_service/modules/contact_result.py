@@ -58,6 +58,20 @@ class ContactResultManager:
                         "help_text": u'勾选该选项，则客服在选择了该联系结果的时候，玩家将绑定到该客服'
                     },
                     {
+                        "type": "checkbox",
+                        "checkbox_group": [
+                            {
+                                "label": u"是否显示",
+                                "name": "show",
+                                "id": "_show",
+                                "value": "1",
+                                "checked": True
+                            }
+                        ],
+                        "help_id": "_bind_show",
+                        "help_text": u'是否对客服显示该联系结果项'
+                    },
+                    {
                         "type": "select",
                         "label": u"联系进度绑定",
                         "help_id": "_result_bind",
@@ -82,7 +96,7 @@ class ContactResultManager:
         except ObjectDoesNotExist:
             return None
 
-        media = Media(js=['common/selector2/js/select2.full.js', 'js/user.js'],
+        media = Media(js=['common/selector2/js/select2.full.js', 'js/result.js'],
                       css={'all': ['common/selector2/css/select2.min.css']})
 
         options = [
@@ -131,6 +145,20 @@ class ContactResultManager:
                         "help_text": u'勾选该选项，则客服在选择了该联系结果的时候，玩家将绑定到该客服'
                     },
                     {
+                        "type": "checkbox",
+                        "checkbox_group": [
+                            {
+                                "label": u"是否显示",
+                                "name": "show",
+                                "id": "_show",
+                                "value": "1",
+                                "checked": result_obj.show
+                            }
+                        ],
+                        "help_id": "_bind_show",
+                        "help_text": u'是否对客服显示该联系结果项'
+                    },
+                    {
                         "type": "select",
                         "label": u"联系进度绑定",
                         "help_id": "_result_bind",
@@ -159,6 +187,7 @@ class ContactResultManager:
         bind_text = params.get('bind', 0)
         bind = int(bind_text) == 1
         process = params.get('result_bind')
+        show = params.get('show', 0) == 1
 
         try:
             ContractResult.objects.get(id=result_id)
@@ -166,7 +195,7 @@ class ContactResultManager:
             return 0
 
         ContractResult.objects.filter(id=result_id).update(
-            result=result, bind=bind, process=process
+            result=result, bind=bind, process=process, show=show
         )
 
         return 1
@@ -249,8 +278,9 @@ class ContactResultManager:
         bind_text = params.get('bind', 0)
         bind = int(bind_text) == 1
         process = params.get('result_bind')
+        show = params.get('show', 0) == 1
 
-        result_obj = ContractResult(result=result, bind=bind, process=process)
+        result_obj = ContractResult(result=result, bind=bind, process=process, show=show)
 
         result_obj.save()
 

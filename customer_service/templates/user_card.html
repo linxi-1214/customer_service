@@ -72,7 +72,7 @@
                                 <select id="inputStatus" name="status" class="form-control" kind="form-select">
                                     <option></option>
                                     {% for s in status %}
-                                        <option value="{{ s.value }}" {{ s.selected }}>{{ s.label }}</option>
+                                        <option value="{{ s.value }}" {% if s.selected %}selected{% endif %}>{{ s.label }}</option>
                                     {% endfor %}
                                 </select>
                             </div>

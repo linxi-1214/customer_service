@@ -12,6 +12,7 @@ from django.conf import settings
 
 from django.forms.widgets import Media
 from django.db import connection
+from django.conf import settings
 
 from customer_service.models import Menu, Role, RoleBindMenu
 
@@ -717,6 +718,16 @@ class PlayerManager:
 
     @staticmethod
     def contract_display(player_id, user):
+        player_bind_info_qry_sql = """
+            SELECT
+                count(*) AS counter
+            FROM player_bind_info
+                INNER JOIN
+                contract_result ON contract_result.id = player_bind_info.contract_result_id
+            WHERE user_id = %s
+                AND player_id = %s AND contract_result.process = %s
+                AND in_effect =1 AND STRFTIME('%%Y-%%m-%%d', contract_time) = %s
+        """
         if player_id is None:
             refresh_player_sql = """
                 SELECT
@@ -784,6 +795,25 @@ class PlayerManager:
 
             player_info = player_info[0]
 
+            cursor.execute(player_bind_info_qry_sql,
+                           (
+                               user.id, player_info.id, settings.PROCESS['looked'],
+                               datetime.now().strftime('%Y-%m-%d')
+                           ))
+            print(user.id, player_info.id, datetime.now().strftime('%Y-%m-%d'))
+            bind_info = namedtuplefetchall(cursor)[0]
+
+            if bind_info.counter == 0:
+                try:
+                    looked_object = ContractResult.objects.filter(process=settings.PROCESS['looked']).first()
+                    PlayerBindInfo.objects.create(
+                        user=user, player_id=player_info.id,
+                        is_bound=False, contract_time=datetime.now(),
+                        contract_result=looked_object, in_effect=True
+                    )
+                except ObjectDoesNotExist:
+                    pass
+
         # 查询玩家当前的标记信息
         player_contract_result_sql = """
             SELECT
@@ -793,9 +823,9 @@ class PlayerManager:
                     LEFT JOIN
                 (SELECT tab_a.contract_result_id
                 FROM player_bind_info AS tab_a
-                WHERE tab_a.id = (SELECT max(id)
+                WHERE tab_a.id = (SELECT max(tab_b.id)
                               FROM player_bind_info AS tab_b
-                              WHERE in_effect = 1 AND player_id = %s
+                              WHERE tab_b.in_effect = 1 AND tab_b.player_id = %s
                                   AND tab_a.player_id = tab_b.player_id
                               )
                 ) AS bind ON bind.contract_result_id = r.id
@@ -879,7 +909,7 @@ class PlayerManager:
             {
                 "value": result.id,
                 "label": result.result,
-                "selected": result.contract_result_id is not None
+                "selected": result.contract_result_id == result.id
             } for result in result_info
         ]
 
@@ -977,7 +1007,7 @@ class PlayerManager:
                 contract_time=datetime.now(),
                 contract_result=status_obj,
                 in_effect=True,
-                notes=notes
+                note=notes
             )
 
         return player_obj
@@ -1228,4 +1258,8 @@ class PlayerManager:
 
     @staticmethod
     def export_player():
+        pass
+
+    @staticmethod
+    def player_detail():
         pass
