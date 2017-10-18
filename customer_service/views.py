@@ -301,6 +301,30 @@ def contract_player(request):
 
     return TemplateResponse(request, "user_card.html", context=context)
 
+
+@login_required
+@permission_need([ADMIN, CUSTOMER_SERVICE])
+@require_http_methods(["GET", "POST"])
+def player_contact_detail(request):
+    menus = Context.menus(request.user)
+
+    time_range = None
+    if request.method == "GET":
+        player_id = None
+    else:
+        player_id = request.POST.get('account', None)
+        time_range_str = request.POST.get('time-range', None)
+
+        if time_range_str is not None and time_range_str != '':
+            time_range = time_range_str.split(' ~ ')
+        else:
+            time_range = None
+
+    context = PlayerManager.player_contact_detail(request.user, player_id, time_range)
+    context.update(menus=menus)
+
+    return TemplateResponse(request, "player_contact_detail.html", context=context)
+
 # Player View End -------------
 
 

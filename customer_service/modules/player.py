@@ -756,12 +756,10 @@ class PlayerManager:
                     player.locked_by_user_id
                 FROM player
                     LEFT JOIN
-                    (SELECT player_id
-                    FROM player_bind_info
-                    WHERE player_bind_info.is_bound = 1 AND player_bind_info.in_effect = 1
-                    ) AS player_bind_info ON player.id != player_bind_info.player_id
+                    player_bind_info ON player.id != player_bind_info.player_id
                 WHERE player.locked = 0 AND player.locked_by_user_id IS NULL AND player.is_deleted = 0
                     AND current_contact_user_id IS NULL
+                    AND player_bind_info.is_bound = 1 AND player_bind_info.in_effect = 1
                 ORDER BY player.timestamp, player.id ASC
                 LIMIT 1
             """
@@ -800,7 +798,6 @@ class PlayerManager:
                                user.id, player_info.id, settings.PROCESS['looked'],
                                datetime.now().strftime('%Y-%m-%d')
                            ))
-            print(user.id, player_info.id, datetime.now().strftime('%Y-%m-%d'))
             bind_info = namedtuplefetchall(cursor)[0]
 
             if bind_info.counter == 0:
@@ -839,23 +836,23 @@ class PlayerManager:
 
         # 查询最近的登录信息
         login_info_sql = """
-                    SELECT
-                        login_info.player_id,
-                        login_info.login_time,
-                        game.name AS game_name
-                    FROM
-                        player_login_info AS login_info
-                        INNER JOIN game ON login_info.game_id = game.id
-                    WHERE login_info.id = (
-                        SELECT
-                            login_a.id
-                        FROM player_login_info AS login_a WHERE login_a.id = (
-                            SELECT login_b.id FROM player_login_info AS login_b
-                            WHERE login_a.player_id = login_b.player_id AND login_b.player_id = %s
-                            ORDER BY login_b.login_time ASC LIMIT 1
-                        )
-                    )
-                """
+            SELECT
+                login_info.player_id,
+                login_info.login_time,
+                game.name AS game_name
+            FROM
+                player_login_info AS login_info
+                INNER JOIN game ON login_info.game_id = game.id
+            WHERE login_info.id = (
+                SELECT
+                    login_a.id
+                FROM player_login_info AS login_a WHERE login_a.id = (
+                    SELECT login_b.id FROM player_login_info AS login_b
+                    WHERE login_a.player_id = login_b.player_id AND login_b.player_id = %s
+                    ORDER BY login_b.login_time ASC LIMIT 1
+                )
+            )
+        """
 
         with connection.cursor() as cursor:
             cursor.execute(login_info_sql, (player_info.id, ))
@@ -905,6 +902,16 @@ class PlayerManager:
             cursor.execute(account_sql, (player_info.id, ))
             account_info = namedtuplefetchall(cursor)
 
+        # 查询玩家的备注信息
+        note_info_set = PlayerBindInfo.objects.filter(player_id=player_info.id).order_by('-contract_time')
+        note_info = [
+            "% 2d. [时间：%s] 备注：%s" % (
+                ind,
+                _note.contract_time.strftime('%Y-%m-%d %H:%M:%S'),
+                _note.note
+            ) for ind, _note in enumerate(note_info_set, start=1) if _note.note is not None and _note.note != ""
+        ]
+
         status_info = [
             {
                 "value": result.id,
@@ -945,6 +952,7 @@ class PlayerManager:
             'status': status_info,
             'player': player_info,
             'login_info': login_info,
+            'note_info': "<br>".join(note_info),
             'media': {
                 'js': media.render_js(),
                 'css': media.render_css()
@@ -1180,7 +1188,7 @@ class PlayerManager:
                         account=account,
                         mobile=mobile,
                         come_from=come_from,
-                        import_from=player_import, game_count=game_count, charge_money_total=charge_money_total
+                        imported_from=player_import, game_count=game_count, charge_money_total=charge_money_total
                     )
 
                 if register_name.strip() != '':
@@ -1225,7 +1233,7 @@ class PlayerManager:
             except Exception as err:
                 import_result_error.append({
                     'account': account,
-                    'error': err
+                    'error': str(err)
                 })
 
         return notes, import_result_error
@@ -1261,5 +1269,188 @@ class PlayerManager:
         pass
 
     @staticmethod
-    def player_detail():
-        pass
+    def _query_player(user, player_id=None, time_range=''):
+        if user.is_superuser:
+            player_set = Player.objects.all()
+        else:
+            player_sql = """
+                SELECT
+                    player.id
+                    player.account
+                FROM player
+                    INNER JOIN
+                    player_bind_info ON player_bind_info.player_id = player.id
+                WHERE player_bind_info.is_bound = 1 AND player_bind_info.user_id = %s
+            """
+            with connection.cursor() as cursor:
+                cursor.execute(player_sql, (user.id,))
+                player_set = namedtuplefetchall(cursor)
+
+        media = Media(js=['common/selector2/js/select2.full.js',
+                          'vendor/datatables/js/jquery.dataTables.min.js',
+                          'vendor/datatables/js/dataTables.bootstrap4.min.js',
+                          'common/date/dateRange.js',
+                          'js/player.js'],
+                      css={'all': [
+                          'vendor/bootstrap-social/bootstrap-social.css',
+                          'vendor/datatables/css/dataTables.bootstrap4.min.css',
+                          'common/selector2/css/select2.min.css',
+                          'common/date/dateRange.css'
+                      ]})
+        options = [
+            {
+                "label": player.account, "value": player.id, "selected": '%d' % player.id == player_id
+            } for player in player_set
+        ]
+
+        context = {
+            'breadcrumb_items': [
+                {
+                    'href': '#',
+                    'active': True,
+                    'label': u'玩家联系记录'
+                }
+            ],
+            'media': {
+                'js': media.render_js(),
+                "css": media.render_css()
+            },
+            "form": {
+                "method": "post",
+                "action": "#",
+                "fields": [
+                    {
+                        "type": "group",
+                        "attrs": {
+                            "id": "register_game_info_id"
+                        },
+                        "group_css": "register-game-none",
+                        "group": [
+                            {
+                                "type": "select",
+                                "label": u"玩家账号",
+                                "name": "account",
+                                "id": "_account",
+                                'options': options,
+                                "group_css": "col-lg-4"
+                            },
+                            {
+                                "type": "text",
+                                "label": u"时间范围",
+                                "name": "time-range",
+                                "id": "_time-range",
+                                "group_css": "col-lg-4",
+                                "value": time_range
+                            },
+                            {
+                                "type": "group_button",
+                                "label": u'<i class="fa fa-info-circle"></i>  查&nbsp;&nbsp;&nbsp;&nbsp;看',
+                                "extra_class": "btn-primary form-control delete-icon-button",
+                                "button_type": "submit",
+                                "group_css": "col-lg-2"
+                            }
+                        ]
+                    },
+
+                ]
+            }
+        }
+
+        return context
+
+    @staticmethod
+    def _query_player_contact_detail(player_id, date_range):
+        try:
+            player = Player.objects.get(id=player_id or '0')
+        except ObjectDoesNotExist:
+            return {}
+
+        bind_info_sql = """
+            SELECT
+                service.first_name,
+                service.last_name,
+                service.loginname,
+                bind_info.is_bound,
+                bind_info.contract_time,
+                bind_info.note,
+                contact.result,
+                contact.process
+            FROM
+                player_bind_info AS bind_info
+                INNER JOIN
+                customer_service_user AS service ON service.id = bind_info.user_id
+                INNER JOIN
+                contract_result AS contact ON contact.id = bind_info.contract_result_id
+            WHERE bind_info.player_id = %s {time_range}
+            ORDER BY bind_info.contract_time DESC, contact.process ASC
+        """
+
+        if date_range is None:
+            time_range_condition = ""
+            params = (player_id, )
+        else:
+            time_range_condition = "AND bind_info.contract_time BETWEEN %s AND %s"
+            params = (player_id, date_range[0], date_range[1])
+
+        bind_info_sql = bind_info_sql.format(time_range=time_range_condition)
+
+        with connection.cursor() as cursor:
+            cursor.execute(bind_info_sql, params)
+            bind_info_set = namedtuplefetchall(cursor)
+
+        icon = ["fa-eye", "fa-link", "fa-phone", "fa-lock"]
+        icon_class = ["default", "info", "warning", "success"]
+
+        bind_info_list = [
+            {
+                "user": "%s%s(%s)" % (bind_info.first_name or '', bind_info.last_name or '', bind_info.loginname),
+                "is_bound": bind_info.is_bound,
+                "contact_time": (bind_info.contract_time.strftime('%Y-%m-%d %H:%M:%S')
+                                 if bind_info.contract_time else ''),
+                "result": bind_info.result, "process": bind_info.process,
+                "note": bind_info.note,
+                "arrow_class": "timeline-inverted" if ind % 2 == 0 else "",
+                "icon": icon[(bind_info.process - 1) % 4],
+                "icon_class": icon_class[(bind_info.process - 1) % 4],
+                'player': player.account
+            } for ind, bind_info in enumerate(bind_info_set)
+            ]
+
+        headers = [
+            {'text': u'玩家账号'}, {'text': u'联系玩家'}, {'text': u'联系时间'},
+            {'text': u'联系结果'}, {'text': u'备注'}
+        ]
+
+        tbody = [
+            {
+                'columns': [
+                    {'text': 1, "style": "display: none"},
+                    {'text': bind_info.get('player') or '--'},
+                    {'text': bind_info.get('user') or '--'},
+                    {'text': bind_info.get('contact_time') or '--'},
+                    {'text': bind_info.get('result') or '--'},
+                    {'text': bind_info.get('note') or '--'}
+                ]
+            } for bind_info in bind_info_list
+            ]
+
+        table = {
+            'id': '_player-contact-table',
+            'headers': headers,
+            'tbody': tbody,
+        }
+
+        return {'contact_record': bind_info_list, "table": table}
+
+    @staticmethod
+    def player_contact_detail(user, player_id=None, date_range=None):
+        if date_range is not None:
+            time_range = '%s ~ %s' % tuple(date_range)
+        else:
+            time_range = ''
+        context = PlayerManager._query_player(user, player_id, time_range)
+        contact_info = PlayerManager._query_player_contact_detail(player_id, date_range)
+
+        context.update(contact_info)
+
+        return context

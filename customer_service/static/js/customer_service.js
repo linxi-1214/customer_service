@@ -223,11 +223,6 @@ $(function () {
 
     new pickerDateRange('_time-range', {
         isTodayValid : true,
-        //startDate : '2013-04-14',
-        //endDate : '2038-04-21',
-        //needCompare : true,
-        //isSingleDay : true,
-        //shortOpr : true,
         stopToday: false,
         defaultText : ' ~ ',
         inputTrigger : 'input_trigger_demo3'

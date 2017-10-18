@@ -21,6 +21,7 @@ urlpatterns = [
     url(r'player/export/$', views.export_player, name='export_player'),
     url(r'player/contract/$', views.contract_player, name='contract_player'),
     url(r'player/import-result/([0-9]+)/$', views.import_detail, name='import_detail'),
+    url(r'player/contact-record/$', views.player_contact_detail, name='player_contact_detail'),
     # Player View End
 
     # 游戏 BEGIN

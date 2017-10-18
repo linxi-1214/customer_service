@@ -74,7 +74,7 @@ class ServiceManager:
                 "fields": [
                     {
                         "type": "select",
-                        "label": u"玩家账号",
+                        "label": u"客服账号",
                         "name": "account",
                         "id": "_account",
                         'options': options,

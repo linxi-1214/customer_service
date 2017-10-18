@@ -150,54 +150,70 @@ $(function () {
         console.log(e.message)
     }
 
-    $.fn.dataTable.ext.search.push(
-        function( settings, data, dataIndex ) {
-            var min = parseInt( $('#_charge_money_min').val(), 10 );
-            var max = parseInt( $('#_charge_money_max').val(), 10 );
-            var money = parseFloat( data[12] ) || 0; // use data for the age column
+    if ( $("#_charge_money_min").length > 0 )
+        $.fn.dataTable.ext.search.push(
+            function( settings, data, dataIndex ) {
+                var min = parseInt( $('#_charge_money_min').val(), 10 );
+                var max = parseInt( $('#_charge_money_max').val(), 10 );
+                var money = parseFloat( data[12] ) || 0; // use data for the age column
 
-            if ( ( isNaN( min ) && isNaN( max ) ) ||
-                 ( isNaN( min ) && money <= max ) ||
-                 ( min <= money   && isNaN( max ) ) ||
-                 ( min <= money   && money <= max ) )
-            {
-                return true;
+                if ( ( isNaN( min ) && isNaN( max ) ) ||
+                     ( isNaN( min ) && money <= max ) ||
+                     ( min <= money   && isNaN( max ) ) ||
+                     ( min <= money   && money <= max ) )
+                {
+                    return true;
+                }
+                return false;
             }
-            return false;
-        }
-    );
+        );
 
-    $.fn.dataTable.ext.search.push(
-        function( settings, data, dataIndex ) {
-            var time_range = $('#_import-time-input').val();
-            if (time_range == "")
-                return true;
-            else
-                time_range = time_range.split(' ~ ');
-            var regEx = new RegExp("\\-","gi");
-            var start_time = time_range[0].replace(regEx, "/");
-            var end_time = time_range[1].replace(regEx, "/");
+    if ($("#_import-time-input").length > 0)
+        $.fn.dataTable.ext.search.push(
+            function( settings, data, dataIndex ) {
+                var time_range = $('#_import-time-input').val();
+                if (time_range == "")
+                    return true;
+                else
+                    time_range = time_range.split(' ~ ');
+                var regEx = new RegExp("\\-","gi");
+                var start_time = time_range[0].replace(regEx, "/");
+                var end_time = time_range[1].replace(regEx, "/");
 
-            start_time = new Date(start_time);
-            end_time = new Date(end_time);
+                start_time = new Date(start_time);
+                end_time = new Date(end_time);
 
-            var import_time = data[3].replace(regEx, "/"); // use data for the age column
+                var import_time = data[3].replace(regEx, "/"); // use data for the age column
 
-            import_time = new Date(import_time);
+                import_time = new Date(import_time);
 
-            if (isNaN(import_time))
-                return true;
+                if (isNaN(import_time))
+                    return true;
 
-            if (start_time <= import_time && import_time <= end_time ) {
-                return true;
+                if (start_time <= import_time && import_time <= end_time ) {
+                    return true;
+                }
+                return false;
             }
-            return false;
-        }
-    );
+        );
 
 
     $(".form-group").tooltip({
         selector: "[data-toggle=tooltip]",
         container: "body"
     });
+
+    try {
+        new pickerDateRange('_time-range', {
+            isTodayValid : true,
+            stopToday: false,
+            defaultText : ' ~ ',
+            inputTrigger : 'input_trigger_demo3'
+        });
+    } catch (e) {
+        console.log(e.message)
+    }
+    var time_range = $("#_time-range");
+    if (time_range.length > 0)
+        time_range.val(time_range.attr("value"));
 });
