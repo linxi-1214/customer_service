@@ -23,7 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'hlt&&$)7y+_$l5wk#-r@bn+vtc3*qn*yd3f8(-r-_oxe9o4$4p'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -78,12 +78,20 @@ WSGI_APPLICATION = 'web_service.wsgi.application'
 
 DATABASES = {
     'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'customer_service',
+        'USER': 'mysql',
+        'PASSWORD': 'Paratera@2017',
+        'HOST': '',
+        'PORT': ''
+    },
+    'sqlite': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
-DATABASE_TYPE = "sqlite3"
+DATABASE_TYPE = "mysql"
 
 
 # Password validation

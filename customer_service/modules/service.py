@@ -142,25 +142,27 @@ class ServiceManager:
             User.objects.get(id=user_id)
         except ObjectDoesNotExist:
             return [], [[]]
-
+        query_sql = """
+            SELECT
+                count(player_bind_info.id) AS counter,
+                {time_func_str} AS contact_date
+            FROM player_bind_info
+                INNER JOIN
+                contract_result ON player_bind_info.contract_result_id = contract_result.id
+            WHERE {time_func_str} BETWEEN %s AND %s
+                AND player_bind_info.user_id = %s
+                AND player_bind_info.in_effect = 1
+                AND contract_result.process >= %s
+                AND player_bind_info.is_bound = %s
+            GROUP BY contact_date
+            ORDER BY contact_date ASC
+        """
         if settings.DATABASE_TYPE == "sqlite3":
-            query_sql = """
-                SELECT
-                    count(*) AS counter,
-                    strftime('%%Y-%%m-%%d', contract_time) AS contact_date
-                FROM player_bind_info
-                    INNER JOIN
-                    contract_result ON player_bind_info.contract_result_id = contract_result.id
-                WHERE contact_date BETWEEN %s AND %s
-                    AND user_id = %s
-                    AND in_effect = 1
-                    AND contract_result.process >= %s
-                    {other_condition}
-                GROUP BY contact_date
-                ORDER BY contact_date ASC
-            """
-        else:
-            query_sql = """"""
+            query_sql = query_sql.format(time_func_str="STRFTIME('%%Y-%%m-%%d', player_bind_info.contract_time)")
+        elif settings.DATABASE_TYPE == "mysql":
+            query_sql = query_sql.format(time_func_str="DATE_FORMAT(player_bind_info.contract_time, '%%Y-%%m-%%d')")
+
+        print(query_sql)
 
         process_order = ['looked', 'contacted', 'connected', 'success']
 
@@ -168,15 +170,13 @@ class ServiceManager:
         start_date, end_date = date_range
         with connection.cursor() as cursor:
             for process in process_order:
-                if process == "success":
-                    query_sql = query_sql.format(other_condition="AND is_bound=1")
-                else:
-                    query_sql = query_sql.format(other_condition='')
+                is_bound = 1 if process == "success" else 0
 
                 cursor.execute(query_sql, (start_date,
                                            end_date,
                                            user_id,
-                                           settings.PROCESS[process])
+                                           settings.PROCESS[process],
+                                           is_bound)
                                )
 
                 query_set = namedtuplefetchall(cursor)

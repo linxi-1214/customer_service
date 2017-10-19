@@ -91,7 +91,7 @@ class PlayerManager:
                     "name": "game_name",
                     "id": "_game_name",
                     "options": game_obj_dict,
-                    "attrs": {'style': "margin-right: 10px"}
+                    "attrs": {'style': "margin-right: 10px; min-width: 120px;"}
                 },
                 {
                     "type": "text",
@@ -171,124 +171,165 @@ class PlayerManager:
 
             player_id_list = [player_obj.id for player_obj in player_qry_set]
 
-        place_holder = ", ".join(['%s'] * len(player_id_list))
-
-        register_info_sql = """
-            SELECT
-                register_info.player_id,
-                register_info.register_time,
-                game.name AS game_name
-            FROM
-                register_info
-                INNER JOIN game ON register_info.game_id = game.id
-            WHERE register_info.id IN (
+        if len(player_id_list) > 0:
+            place_holder = ", ".join(['%s'] * len(player_id_list))
+            register_info_sql = """
                 SELECT
-                   reg_a.id
-                FROM register_info AS reg_a WHERE reg_a.id = (
-                    SELECT reg_b.id FROM register_info AS reg_b
-                    WHERE reg_a.player_id = reg_b.player_id AND reg_b.player_id IN (%s)
-                    ORDER BY reg_b.register_time ASC LIMIT 1
+                    register_info.player_id,
+                    register_info.register_time,
+                    game.name AS game_name
+                FROM
+                    register_info
+                    INNER JOIN
+                    game ON register_info.game_id = game.id
+                    INNER JOIN
+                    (
+                        SELECT
+                            player_id, MIN(register_time)
+                        FROM register_info
+                        WHERE player_id IN (%s)
+                        GROUP BY player_id
+                    ) AS register_info_b ON register_info.player_id = register_info_b.player_id
+            """ % place_holder
+
+            login_info_sql = """
+                SELECT
+                    login_info.player_id,
+                    login_info.login_time,
+                    game.name AS game_name
+                FROM
+                    player_login_info AS login_info
+                    INNER JOIN game ON login_info.game_id = game.id
+                WHERE login_info.id IN (
+                    SELECT
+                        login_a.id
+                    FROM player_login_info AS login_a WHERE login_a.id = (
+                        SELECT login_b.id FROM player_login_info AS login_b
+                        WHERE login_a.player_id = login_b.player_id AND login_b.player_id IN (%s)
+                        ORDER BY login_b.login_time ASC LIMIT 1
                     )
                 )
-        """ % place_holder
+            """ % place_holder
 
-        login_info_sql = """
-            SELECT
-                login_info.player_id,
-                login_info.login_time,
-                game.name AS game_name
-            FROM
-                player_login_info AS login_info
-                INNER JOIN game ON login_info.game_id = game.id
-            WHERE login_info.id IN (
+            account_log_sql = """
                 SELECT
-                    login_a.id
-                FROM player_login_info AS login_a WHERE login_a.id = (
-                    SELECT login_b.id FROM player_login_info AS login_b
-                    WHERE login_a.player_id = login_b.player_id AND login_b.player_id IN (%s)
-                    ORDER BY login_b.login_time ASC LIMIT 1
+                    account_log.player_id,
+                    account_log.money AS last_charge_money,
+                    account_log.charge_time AS last_charge_time,
+                    game.name AS last_charge_game
+                FROM account_log
+                    INNER JOIN game ON account_log.game_id = game.id
+                WHERE account_log.id IN (
+                    SELECT
+                        account_a.id
+                    FROM account_log AS account_a WHERE account_a.id = (
+                        SELECT account_b.id FROM account_log AS account_b
+                        WHERE account_a.player_id = account_b.player_id AND account_b.player_id IN (%s)
+                        ORDER BY account_b.charge_time DESC LIMIT 1
+                    )
                 )
-            )
-        """ % place_holder
+            """ % place_holder
 
-        account_log_sql = """
-            SELECT
-                account_log.player_id,
-                account_log.money AS last_charge_money,
-                account_log.charge_time AS last_charge_time,
-                game.name AS last_charge_game
-            FROM account_log
-                INNER JOIN game ON account_log.game_id = game.id
-            WHERE account_log.id IN (
+            bind_info_sql = """
                 SELECT
-                    account_a.id
-                FROM account_log AS account_a WHERE account_a.id = (
-                    SELECT account_b.id FROM account_log AS account_b
-                    WHERE account_a.player_id = account_b.player_id AND account_b.player_id IN (%s)
-                    ORDER BY account_b.charge_time DESC LIMIT 1
-                )
-            )
-        """ % place_holder
+                    bind_info.player_id,
+                    contact.result
+                FROM player_bind_info AS bind_info
+                    INNER JOIN contract_result AS contact ON bind_info.contract_result_id = contact.id
+                WHERE bind_info.in_effect = 1
+                    AND bind_info.id IN (
+                        SELECT MAX(id) FROM player_bind_info WHERE player_id IN (%s) GROUP BY player_id
+                    )
+            """ % place_holder
 
-        bind_info_sql = """
-            SELECT
-                bind_info.player_id,
-                contact.result
-            FROM player_bind_info AS bind_info
-                INNER JOIN contract_result AS contact ON bind_info.contract_result_id = contact.id
-            WHERE bind_info.in_effect = 1
-                AND bind_info.id IN (
-                    SELECT MAX(id) FROM player_bind_info WHERE player_id IN (%s) GROUP BY player_id
-                )
-        """ % place_holder
+            with connection.cursor() as cursor:
+                cursor.execute(register_info_sql, player_id_list)
+                register_info_qry_set = namedtuplefetchall(cursor)
 
-        with connection.cursor() as cursor:
-            cursor.execute(register_info_sql, player_id_list)
-            register_info_qry_set = namedtuplefetchall(cursor)
+                register_info_dict = dict([
+                    (_reg_info.player_id, _reg_info) for _reg_info in register_info_qry_set
+                ])
 
-            register_info_dict = dict([
-                (_reg_info.player_id, _reg_info) for _reg_info in register_info_qry_set
-            ])
+            with connection.cursor() as cursor:
+                cursor.execute(login_info_sql, player_id_list)
+                login_info_qry_set = namedtuplefetchall(cursor)
 
-        with connection.cursor() as cursor:
-            cursor.execute(login_info_sql, player_id_list)
-            login_info_qry_set = namedtuplefetchall(cursor)
+                login_info_dict = dict([
+                    (_login_info.player_id, _login_info) for _login_info in login_info_qry_set
+                ])
 
-            login_info_dict = dict([
-                (_login_info.player_id, _login_info) for _login_info in login_info_qry_set
-            ])
+            with connection.cursor() as cursor:
+                cursor.execute(account_log_sql, player_id_list)
+                account_log_qry_set = namedtuplefetchall(cursor)
 
-        with connection.cursor() as cursor:
-            cursor.execute(account_log_sql, player_id_list)
-            account_log_qry_set = namedtuplefetchall(cursor)
+                account_log_dict = dict([
+                    (_account_log.player_id, _account_log) for _account_log in account_log_qry_set
+                ])
 
-            account_log_dict = dict([
-                (_account_log.player_id, _account_log) for _account_log in account_log_qry_set
-            ])
+            with connection.cursor() as cursor:
+                cursor.execute(bind_info_sql, player_id_list)
+                bind_info_qry_set = namedtuplefetchall(cursor)
 
-        with connection.cursor() as cursor:
-            cursor.execute(bind_info_sql, player_id_list)
-            bind_info_qry_set = namedtuplefetchall(cursor)
+                bind_info_dict = dict([
+                    (_bind_info.player_id, _bind_info) for _bind_info in bind_info_qry_set
+                ])
 
-            bind_info_dict = dict([
-                (_bind_info.player_id, _bind_info) for _bind_info in bind_info_qry_set
-            ])
+            def _attr(dict_info, player_id, attr):
+                obj = dict_info.get(player_id)
 
-        def _attr(dict_info, player_id, attr):
-            obj = dict_info.get(player_id)
+                if obj is None:
+                    return '--'
+                else:
+                    val = getattr(obj, attr)
+                    if isinstance(val, datetime):
+                        val = val.strftime('%Y-%m-%d %H:%M:%S')
 
-            if obj is None:
-                return '--'
-            else:
-                val = getattr(obj, attr)
-                if isinstance(val, datetime):
-                    val = val.strftime('%Y-%m-%d %H:%M:%S')
+                    if val is None:
+                        val = '--'
+                    return val
 
-                if val is None:
-                    val = '--'
-                return val
+            delete_url = reverse('delete_player')
+            tbody = [
+                {
+                    'columns': [
+                        {'text': player_obj.id, 'style': "display: none"},
+                        {'text': player_obj.account},
+                        {'text': player_obj.username or '--'},
+                        {'text': player_obj.mobile or '--'},
+                        {'text': player_obj.qq or '--'},
+                        {'text': _attr(register_info_dict, player_obj.id, 'game_name')},
+                        {'text': _attr(register_info_dict, player_obj.id, 'register_time')},
+                        {'text': player_obj.loginname or '--'},
+                        {'text': player_obj.come_from or '--'},
+                        {'text': _attr(login_info_dict, player_obj.id, 'game_name')},
+                        {'text': _attr(login_info_dict, player_obj.id, 'login_time')},
+                        {'text': player_obj.charge_count or '--'},
+                        {'text': player_obj.charge_money_total or '--'},
+                        {'text': _attr(account_log_dict, player_obj.id, 'last_charge_game')},
+                        {'text': _attr(account_log_dict, player_obj.id, 'last_charge_money')},
+                        {'text': _attr(account_log_dict, player_obj.id, 'last_charge_time')},
+                        {'text': _attr(bind_info_dict, player_obj.id, 'result')}
+                    ],
+                    'actions': [
+                        {
+                            'icon': 'fa-edit',
+                            'tooltip': u'编辑',
+                            'href': reverse('edit_player', args=(player_obj.id,))
+                        },
+                        {
+                            'href': '#',
+                            'icon': 'fa-trash-o',
+                            'tooltip': u'删除',
+                            'func': 'delete_player("{url}", {id}, "{label}")'.format(
+                                url=delete_url, id=player_obj.id, label=player_obj.account
+                            )
+                        }
+                    ]
+                } for player_obj in player_qry_set
+            ]
+        else:
+            tbody = []
 
-        delete_url = reverse('delete_player')
         media = Media(js=[
             'js/player.js',
             'vendor/datatables/js/dataTables.buttons.min.js',
@@ -297,44 +338,6 @@ class PlayerManager:
             'vendor/xlsx/swfobject.js', 'vendor/xlsx/downloadify.min.js', 'vendor/xlsx/base64.min.js',
             'js/export.js'
         ])
-        tbody = [
-            {
-                'columns': [
-                    {'text': player_obj.id, 'style': "display: none"},
-                    {'text': player_obj.account},
-                    {'text': player_obj.username or '--'},
-                    {'text': player_obj.mobile or '--'},
-                    {'text': player_obj.qq or '--'},
-                    {'text': _attr(register_info_dict, player_obj.id, 'game_name')},
-                    {'text': _attr(register_info_dict, player_obj.id, 'register_time')},
-                    {'text': player_obj.loginname or '--'},
-                    {'text': player_obj.come_from or '--'},
-                    {'text': _attr(login_info_dict, player_obj.id, 'game_name')},
-                    {'text': _attr(login_info_dict, player_obj.id, 'login_time')},
-                    {'text': player_obj.charge_count or '--'},
-                    {'text': player_obj.charge_money_total or '--'},
-                    {'text': _attr(account_log_dict, player_obj.id, 'last_charge_game')},
-                    {'text': _attr(account_log_dict, player_obj.id, 'last_charge_money')},
-                    {'text': _attr(account_log_dict, player_obj.id, 'last_charge_time')},
-                    {'text': _attr(bind_info_dict, player_obj.id, 'result')}
-                ],
-                'actions': [
-                    {
-                        'icon': 'fa-edit',
-                        'tooltip': u'编辑',
-                        'href': reverse('edit_player', args=(player_obj.id,))
-                    },
-                    {
-                        'href': '#',
-                        'icon': 'fa-trash-o',
-                        'tooltip': u'删除',
-                        'func': 'delete_player("{url}", {id}, "{label}")'.format(
-                            url=delete_url, id=player_obj.id, label=player_obj.account
-                        )
-                    }
-                ]
-            } for player_obj in player_qry_set
-            ]
 
         context = {
             'breadcrumb_items': [
@@ -726,8 +729,16 @@ class PlayerManager:
                 contract_result ON contract_result.id = player_bind_info.contract_result_id
             WHERE user_id = %s
                 AND player_id = %s AND contract_result.process = %s
-                AND in_effect =1 AND STRFTIME('%%Y-%%m-%%d', contract_time) = %s
+                AND in_effect = 1 AND {time_func_str} = %s
         """
+        if settings.DATABASE_TYPE == "sqlite":
+            player_bind_info_qry_sql = player_bind_info_qry_sql.format(
+                time_func_str="STRFTIME('%%Y-%%m-%%d', contract_time)"
+            )
+        elif settings.DATABASE_TYPE == "mysql":
+            player_bind_info_qry_sql = player_bind_info_qry_sql.format(
+                time_func_str="DATE_FORMAT('%%Y-%%m-%%d', contract_time)"
+            )
         if player_id is None:
             refresh_player_sql = """
                 SELECT
@@ -754,13 +765,21 @@ class PlayerManager:
                     player.qq,
                     player.locked,
                     player.locked_by_user_id
-                FROM player
-                    LEFT JOIN
-                    player_bind_info ON player.id != player_bind_info.player_id
-                WHERE player.locked = 0 AND player.locked_by_user_id IS NULL AND player.is_deleted = 0
-                    AND current_contact_user_id IS NULL
-                    AND player_bind_info.is_bound = 1 AND player_bind_info.in_effect = 1
-                ORDER BY player.timestamp, player.id ASC
+                FROM
+                    player
+                        LEFT JOIN
+                    (SELECT
+                        player_id
+                    FROM
+                        player_bind_info
+                    WHERE
+                        is_bound = 1 AND in_effect = 1) AS player_bind_info ON player.id != player_bind_info.player_id
+                WHERE
+                    player.locked = 0
+                        AND player.locked_by_user_id IS NULL
+                        AND player.is_deleted = 0
+                        AND current_contact_user_id IS NULL
+                ORDER BY player.timestamp , player.id ASC
                 LIMIT 1
             """
         else:

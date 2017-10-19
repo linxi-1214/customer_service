@@ -5,6 +5,18 @@ from django.forms.widgets import Media
 
 from customer_service.models import Menu, Role, RoleBindMenu
 
+url_name_dict = {
+    'result_index': u'联系结果',
+    'user_index': u'用户管理',
+    'role_index': u'角色管理',
+    'game_index': u'游戏管理',
+    'player_index': u'我的玩家',
+    'import_player': u'导入玩家',
+    'contract_player': u'联系玩家',
+    'user_report': u'客服报告',
+    'player_contact_detail': u'玩家详情'
+}
+
 
 class MenuManager:
 
@@ -31,6 +43,18 @@ class MenuManager:
                 "label": role.desc or role.name
             } for role in role_objs
         ]
+
+        menu_objs = Menu.objects.all()
+        menu_list = [_m.name for _m in menu_objs]
+
+        menu_options = [
+            {
+                "label": label,
+                "value": value
+            } for value, label in url_name_dict.items() if value not in menu_list
+        ]
+        menu_options.insert(0, {"label": "#", "value": "#"})
+
         media = Media(js=['common/selector2/js/select2.js', 'js/menu.js'],
                       css={'all': ['common/selector2/css/select2.min.css']})
         return {
@@ -48,12 +72,13 @@ class MenuManager:
                 "action": reverse('add_menu'),
                 "fields": [
                     {
-                        "type": "text",
+                        "type": "select",
                         "label": u"菜单连接视图",
                         "help_id": "_menu_help",
                         "help_text": u"点击菜单时，跳转的路径名称，如果是父菜单，填写 # ",
                         "name": "name",
-                        "id": "_name"
+                        "id": "_name",
+                        "options": menu_options
                     },
                     {
                         "type": "text",
@@ -200,6 +225,9 @@ class MenuManager:
         menu_icon = params.get('icon', '')
         parent_menu_id = params.get('parent_menu', 0)
 
+        if not menu_label:
+            menu_label = url_name_dict.get(menu_name) or " ".join(menu_name.split('_'))
+
         if parent_menu_id.strip() == '':
             parent_menu_id = 0
 
@@ -212,7 +240,6 @@ class MenuManager:
         db_role_ids = [rel.role_id for rel in rel_qry_set]
 
         role_ids = params.getlist('role', [])
-        print(db_role_ids, role_ids)
         for role_id in role_ids:
             role_id = int(role_id)
             if role_id not in db_role_ids:
@@ -220,7 +247,6 @@ class MenuManager:
             else:
                 db_role_ids.remove(role_id)
 
-        print(db_role_ids)
         if db_role_ids:
             RoleBindMenu.objects.filter(role_id__in=db_role_ids).delete()
 
@@ -305,10 +331,13 @@ class MenuManager:
         if parent_menu_id.strip() == '':
             parent_menu_id = 0
 
+        if not menu_label:
+            menu_label = url_name_dict.get(menu_name) or " ".join(menu_name.split('_'))
+
         menu_obj = Menu(name=menu_name, label=menu_label, icon=menu_icon, parent=parent_menu_id)
         menu_obj.save()
 
-        role_ids = params.get('role')
+        role_ids = params.getlist('role', [])
         for role_id in role_ids:
             RoleBindMenu.objects.create(menu_id=menu_obj.id, role_id=role_id)
 
