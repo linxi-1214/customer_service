@@ -27,3 +27,20 @@ INSERT INTO `contract_result` (`id`,`result`,`bind`,`show`,`process`) VALUES (9,
 INSERT INTO `role` (`id`,`name`,`desc`) VALUES (1,'admin','管理员');
 INSERT INTO `role` (`id`,`name`,`desc`) VALUES (2,'data user','数据管理员');
 INSERT INTO `role` (`id`,`name`,`desc`) VALUES (3,'service','客服人员');
+
+
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (1,1,1);
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (2,2,1);
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (3,3,1);
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (5,4,1);
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (6,5,1);
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (9,6,3);
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (10,6,1);
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (11,6,2);
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (12,7,1);
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (13,8,1);
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (14,9,1);
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (15,10,1);
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (16,11,1);
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (17,12,1);
+INSERT INTO `role_bind_menu` (`id`,`menu_id`,`role_id`) VALUES (18,13,1);

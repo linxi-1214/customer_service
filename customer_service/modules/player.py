@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import logging
 from datetime import datetime
 from collections import namedtuple
 
@@ -20,6 +21,8 @@ from customer_service.models import (
     Game, Player, RegisterInfo, PlayerImport, PlayerExport, AccountLog,
     PlayerLoginInfo, ContractResult, PlayerBindInfo
 )
+
+logger = logging.getLogger(__name__)
 
 
 def namedtuplefetchall(cursor):
@@ -1178,26 +1181,29 @@ class PlayerManager:
         import_result_error = []
         for row_ind in range(2, sheet.nrows):
             player_data = sheet.row(row_ind)
+            if u'玩家账号' not in title_index:
+                raise Exception("没有指定玩家账号。")
+
             account_col = player_data[title_index[u'玩家账号']]
-            mobile = player_data[title_index[u'手机']]
+            mobile = player_data[title_index[u'手机']] if u'手机' in title_index else None
 
             account = '%d' % int(account_col.value) if account_col.ctype == xlrd.XL_CELL_NUMBER else account_col.value
             mobile = '%d' % int(mobile.value) if mobile.ctype == xlrd.XL_CELL_NUMBER else mobile.value
-            come_from = player_data[title_index[u'所属渠道']].value
-            charge_money = player_data[title_index[u'最近充值金额']].value
-            charge_time = player_data[title_index[u'最近充值时间']].value
-            last_login_game = player_data[title_index[u'最近登录游戏']].value
-            last_login_time = player_data[title_index[u'最近登陆时间']].value
-            register_name = player_data[title_index[u'注册游戏']].value
-            register_time = player_data[title_index[u'注册时间']].value
-            game_count = player_data[title_index[u'游戏数量']].value
-            charge_money_total = player_data[title_index[u'充值总额']].value
+            come_from = player_data[title_index[u'所属渠道']].value if u'所属渠道' in title_index else None
+            charge_money = player_data[title_index[u'最近充值金额']].value if u'最近充值金额' in title_index else None
+            charge_time = player_data[title_index[u'最近充值时间']].value if u'最近充值时间' in title_index else None
+            last_login_game = player_data[title_index[u'最近登录游戏']].value if u'最近登录游戏' in title_index else None
+            last_login_time = player_data[title_index[u'最近登陆时间']].value if u'最近登陆时间' in title_index else None
+            register_name = player_data[title_index[u'注册游戏']].value if u'注册游戏' in title_index else None
+            register_time = player_data[title_index[u'注册时间']].value if u'注册时间' in title_index else None
+            game_count = player_data[title_index[u'游戏数量']].value if u'游戏数量' in title_index else None
+            charge_money_total = player_data[title_index[u'充值总额']].value if u'充值总额' in title_index else None
 
             try:
                 try:
                     player_obj = Player.objects.get(account=account)
                     player_obj.mobile = mobile
-                    player_obj.come_from = mobile
+                    player_obj.come_from = come_from
                     player_obj.imported_from = player_import
                     player_obj.charge_money_total = charge_money_total
                     player_obj.game_count = game_count
@@ -1250,6 +1256,7 @@ class PlayerManager:
                         login_time=last_login_time
                     )
             except Exception as err:
+                logger.exception('import player error:')
                 import_result_error.append({
                     'account': account,
                     'error': str(err)

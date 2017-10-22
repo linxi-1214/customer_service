@@ -22,6 +22,16 @@ function delete_user_submit(url, user_id) {
         }
     })
 }
+
+function change_password(chg_url) {
+    $.post(chg_url, $("form").serialize(), function(data, status) {
+        if (status == "success") {
+            alert(data.message);
+        } else
+            alert("内部错误，密码修改失败！")
+    })
+}
+
 $(function () {
     $("select[kind=form-select]").select2({
         placeholder: {

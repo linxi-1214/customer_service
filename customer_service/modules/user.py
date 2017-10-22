@@ -325,3 +325,64 @@ class UserManager:
         user_obj = User.objects.filter(loginname=loginname)
 
         return user_obj.count() > 0
+
+    @staticmethod
+    def change_password(user, old_password, new_password):
+        try:
+            if user.check_password(old_password):
+                user.set_password(new_password)
+                user.save()
+                return True, "密码修改成功！"
+            else:
+                return False, "密码验证失败！"
+        except Exception as err:
+            return False, "修改密码失败！"
+
+    @staticmethod
+    def change_password_display():
+        media = Media(js=['js/user.js'])
+        return {
+            'breadcrumb_items': [
+                {'active': True, 'label': u'个人设置'},
+                {'href': reverse('change_password'), 'label': u'修改密码'}
+            ],
+            "panel_heading": u"用户密码修改",
+            "media": {
+                'js': media.render_js(),
+            },
+            "form": {
+                "method": "post",
+                "action": reverse('change_password'),
+                "fields": [
+                    {
+                        "type": "password",
+                        "label": u"原密码",
+                        "name": "old_password",
+                        "id": "_old_password",
+                    },
+                    {
+                        "type": "password",
+                        "label": u"新密码",
+                        "help_id": "_new_password_help",
+                        "help_text": u'不可包含空格，字母区分大小写',
+                        "name": "new_password",
+                        "id": "_new_password",
+                    },
+                    {
+                        "type": "password",
+                        "label": u"密码确认",
+                        "help_id": "_new_password2_help",
+                        "help_text": u'再次输入新密码',
+                        "name": "new_password2",
+                        "id": "_new_password2",
+                    },
+                    {
+                        "type": "button",
+                        "button_type": "button",
+                        "label": u"提 交",
+                        "extra_class": "btn-primary btn-block",
+                        "click": '"change_password(\'%s\'); return false;"' % reverse('change_password')
+                    }
+                ]
+            }
+        }

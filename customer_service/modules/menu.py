@@ -14,7 +14,8 @@ url_name_dict = {
     'import_player': u'导入玩家',
     'contract_player': u'联系玩家',
     'user_report': u'客服报告',
-    'player_contact_detail': u'玩家详情'
+    'player_contact_detail': u'玩家详情',
+    'change_password': u'修改密码',
 }
 
 
@@ -141,6 +142,14 @@ class MenuManager:
             ]
         media = Media(js=['common/selector2/js/select2.js', 'js/menu.js'],
                       css={'all': ['common/selector2/css/select2.min.css']})
+
+        menu_options = [
+            {
+                "label": label,
+                "value": value
+            } for value, label in url_name_dict.items() if value not in menu_list
+            ]
+        menu_options.insert(0, {"label": "#", "value": "#"})
 
         return {
             'breadcrumb_items': [

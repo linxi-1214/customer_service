@@ -11,6 +11,7 @@ urlpatterns = [
     url(r'message-add/$', views.new_message, name='add_message'),
     url(r'message-list/$', views.message_list, name='message'),
     url(r'user/report/$', views.user_report, name='user_report'),
+    url(r'user/change-password/$', views.change_password, name='change_password'),
 
     # Player View Begin
     url(r'player/index/$', views.player_index, name='player_index'),

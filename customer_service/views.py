@@ -47,6 +47,24 @@ def user_settings(request):
     pass
 
 
+@login_required
+@require_http_methods(["POST", "GET"])
+def change_password(request):
+    if request.method == "GET":
+        menus = Context.menus(request.user)
+        context = UserManager.change_password_display()
+        context.update(menus=menus)
+
+        return TemplateResponse(request, 'change.html', context=context)
+    else:
+        old_password = request.POST.get('old_password')
+        new_password = request.POST.get('new_password')
+
+        success, message = UserManager.change_password(request.user, old_password, new_password)
+
+        return HttpResponse(json.dumps({"success": success, "message": message}), content_type="application/json")
+
+
 @require_http_methods(['POST', 'GET'])
 def user_login(request):
     if request.method == "GET":
@@ -240,10 +258,13 @@ def import_player(request):
             with open(os.path.join(settings.FILE_UPLOAD_STORAGE_DIR, stored_name), r'wb+') as destination:
                 for chunk in file.chunks():
                     destination.write(chunk)
-            PlayerManager.import_player(request.user,
-                                        current_time,
-                                        settings.FILE_UPLOAD_STORAGE_DIR,
-                                        stored_name, file.name)
+            try:
+                PlayerManager.import_player(request.user,
+                                            current_time,
+                                            settings.FILE_UPLOAD_STORAGE_DIR,
+                                            stored_name, file.name)
+            except Exception as err:
+                return HttpResponse(json.dumps({'msg': str(err)}), status=500)
 
         return HttpResponse(json.dumps({'msg': 'OK'}))
 
