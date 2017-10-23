@@ -139,7 +139,10 @@ class MenuManager:
                 "label": role.desc or role.name,
                 "selected": role.id in selected_role_ids
             } for role in role_objs
-            ]
+        ]
+
+        menu_objs = Menu.objects.all()
+        menu_list = [_m.name for _m in menu_objs]
         media = Media(js=['common/selector2/js/select2.js', 'js/menu.js'],
                       css={'all': ['common/selector2/css/select2.min.css']})
 
