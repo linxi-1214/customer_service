@@ -187,7 +187,7 @@ def delete_menu(request, id):
 
 # Player View Begin   ----------
 @login_required
-@permission_need([ADMIN, DATA_USER])
+@permission_need([ADMIN, DATA_USER, CUSTOMER_SERVICE])
 def player_index(request):
     context = PlayerManager.index(request.user)
     menus = Context.menus(request.user)
