@@ -400,6 +400,8 @@ class PlayerManager:
             "form": {
                 "method": "post",
                 "action": reverse('add_player'),
+                "class": "nice-validator n-default n-bootstrap",
+                "attrs": "data-validator-option=\"{theme:'bootstrap', timely:2, stopOnError:true}\"",
                 "fields": [
                     {
                         "type": "text",
@@ -408,7 +410,10 @@ class PlayerManager:
                         "help_text": u"玩家登录账号，由字母和数字组成，唯一",
                         "name": "account",
                         "id": "_account",
-                        "placeholder": "account1"
+                        "placeholder": "account1",
+                        "attrs": {
+                            "data-rule": "玩家账号: required;"
+                        }
                     },
                     {
                         "type": "text",
@@ -724,6 +729,7 @@ class PlayerManager:
 
     @staticmethod
     def contract_display(player_id, user):
+        # 查询该客服目前有没有查看过该玩家
         player_bind_info_qry_sql = """
             SELECT
                 count(*) AS counter
@@ -740,7 +746,7 @@ class PlayerManager:
             )
         elif settings.DATABASE_TYPE == "mysql":
             player_bind_info_qry_sql = player_bind_info_qry_sql.format(
-                time_func_str="DATE_FORMAT('%%Y-%%m-%%d', contract_time)"
+                time_func_str="DATE_FORMAT(contract_time, '%%Y-%%m-%%d')"
             )
         if player_id is None:
             refresh_player_sql = """
@@ -834,25 +840,22 @@ class PlayerManager:
                     pass
 
         # 查询玩家当前的标记信息
-        player_contract_result_sql = """
+
+        contact_result = ContractResult.objects.all()
+        last_contact_result_sql = """
             SELECT
-                r.id, r.result, bind.contract_result_id
-            FROM
-                contract_result AS r
-                    LEFT JOIN
-                (SELECT tab_a.contract_result_id
-                FROM player_bind_info AS tab_a
-                WHERE tab_a.id = (SELECT max(tab_b.id)
-                              FROM player_bind_info AS tab_b
-                              WHERE tab_b.in_effect = 1 AND tab_b.player_id = %s
-                                  AND tab_a.player_id = tab_b.player_id
-                              )
-                ) AS bind ON bind.contract_result_id = r.id
+                *
+            FROM player_bind_info
+            WHERE contract_result_id IN (SELECT id FROM contract_result WHERE process > %s) AND player_id=%s
+            ORDER BY id DESC LIMIT 1
         """
 
         with connection.cursor() as cursor:
-            cursor.execute(player_contract_result_sql, (player_info.id, ))
-            result_info = namedtuplefetchall(cursor)
+            cursor.execute(last_contact_result_sql, (settings.PROCESS['looked'], player_info.id))
+            bind_result = namedtuplefetchall(cursor)
+
+        if len(bind_result) == 0:
+            bind_result = None
 
         # 标记信息查询完毕
 
@@ -938,8 +941,9 @@ class PlayerManager:
             {
                 "value": result.id,
                 "label": result.result,
-                "selected": result.contract_result_id == result.id
-            } for result in result_info
+                "selected": result.process == settings.PROCESS['looked'] if
+                bind_result is None else result.id == bind_result[0].contract_result_id
+            } for result in contact_result
         ]
 
         media = Media(
@@ -1121,8 +1125,9 @@ class PlayerManager:
         player_qq = params.get('qq', '')
 
         game_field_info = []
-        game_field_reg = re.compile(r'^game_id([0-9]*)')
+        game_field_reg = re.compile(r'^game_id([0-9]+)')
         for field_name, field_value in params.items():
+            print(field_name, field_value)
             m = game_field_reg.match(field_name)
             if m is not None:
                 game_id = m.group(1)

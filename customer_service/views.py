@@ -207,7 +207,7 @@ def new_player(request):
 
         return TemplateResponse(request, "change.html", context=context)
     else:
-        player_obj = PlayerManager.save(request.POST)
+        PlayerManager.save(request.POST)
         player_index_url = reverse('player_index')
         return HttpResponseRedirect(player_index_url)
 
@@ -221,7 +221,7 @@ def edit_player(request, id):
         context.update(menus=menus)
         return TemplateResponse(request, 'change.html', context=context)
     else:
-        update_rows = PlayerManager.update(id, request.POST)
+        PlayerManager.update(id, request.POST)
 
         return HttpResponseRedirect(reverse('player_index'))
 

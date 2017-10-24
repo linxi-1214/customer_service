@@ -353,12 +353,16 @@ class UserManager:
             "form": {
                 "method": "post",
                 "action": reverse('change_password'),
+                "attrs": "data-validator-option=\"{theme:'bootstrap', timely:1, stopOnError:true}\"",
                 "fields": [
                     {
                         "type": "password",
                         "label": u"原密码",
                         "name": "old_password",
                         "id": "_old_password",
+                        'attrs': {
+                            'data-rule': '原密码: required;'
+                        }
                     },
                     {
                         "type": "password",
@@ -367,6 +371,9 @@ class UserManager:
                         "help_text": u'不可包含空格，字母区分大小写',
                         "name": "new_password",
                         "id": "_new_password",
+                        "attrs": {
+                            'data-rule': "新密码: required; password"
+                        }
                     },
                     {
                         "type": "password",
@@ -375,6 +382,9 @@ class UserManager:
                         "help_text": u'再次输入新密码',
                         "name": "new_password2",
                         "id": "_new_password2",
+                        "attrs": {
+                            "data-rule": "密码确认: required; match(new_password)"
+                        }
                     },
                     {
                         "type": "button",

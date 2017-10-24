@@ -1,9 +1,18 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block extra_css %}
+    <link rel="stylesheet" href="{% static 'vendor/validator/jquery.validator.css' %}" />
     {% for css in media.css %}
         {{ css }}
     {% endfor %}
+    <style>
+    .alert {
+        padding: 4px 35px 4px 15px;
+        margin-bottom: 0;
+        margin-top: 4px;
+    }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -23,7 +32,26 @@
 {% endblock %}
 
 {% block footer_js %}
+    <script src="{% static 'vendor/validator/jquery.validator.min.js' %}?local=zh-CN"></script>
     {% for js in media.js %}
         {{ js }}
     {% endfor %}
+    <script>
+
+        $(function(){
+            // Custom theme
+            $.validator.setTheme('bootstrap', {
+                validClass: 'has-success',
+                invalidClass: 'has-error',
+                bindClassTo: '.form-group',
+                msgWrapper: 'div',
+                formClass: 'n-default n-bootstrap',
+                msgClass: 'alert alert-danger alert-dismissable',
+                msgMaker: function (opt) {
+                    return '<button type="button" class="close" data-dismiss="alert">×</button>' + opt.msg;
+                }
+            });
+        });
+
+    </script>
 {% endblock %}

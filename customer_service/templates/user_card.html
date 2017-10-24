@@ -4,17 +4,53 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'vendor/bootstrap-social/bootstrap-social.css' %}"/>
     <link rel="stylesheet" href="{% static 'vendor/datatables/css/dataTables.bootstrap4.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'vendor/validator/jquery.validator.css' %}" />
     {% for css in media.css %}
         {{ css|safe }}
     {% endfor %}
+    <style>
+    .alert {
+        padding: 4px 35px 4px 15px;
+        margin-bottom: 0;
+        margin-top: 4px;
+    }
+    </style>
 {% endblock %}
 
 {% block footer_js %}
+    <script src="{% static 'vendor/validator/jquery.validator.js' %}?local=zh-CN"></script>
     {% for js in media.js %}
         {{ js|safe }}
     {% endfor %}
     <script type="text/javascript" src="{% static 'vendor/datatables/js/jquery.dataTables.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'vendor/datatables/js/dataTables.bootstrap4.min.js' %}"></script>
+    <script>
+        $(function(){
+            // Custom theme
+            $.validator.setTheme('bootstrap', {
+                validClass: 'has-success',
+                invalidClass: 'has-error',
+                bindClassTo: '.form-group',
+                msgWrapper: 'div',
+                formClass: 'n-default n-bootstrap',
+                msgClass: 'alert alert-danger alert-dismissable',
+                msgMaker: function (opt) {
+                    return '<button type="button" class="close" data-dismiss="alert">×</button>' + opt.msg;
+                }
+            });
+
+            $("#_contact-form").validator({
+                rules: {
+                    contact_success: function () {
+                        // return $("#inputStatus option:selected").text() != "联系成功" ||
+                        //    ($("#inputStatus option:selected").text() == "联系成功" && $("#inputQQ").val() != "") ||
+                        //    "获取到QQ号码才能设置为联系成功";
+                        return $("#inputStatus option:selected").text() == "联系成功";
+                    }
+                }
+            });
+        });
+    </script>
 {% endblock %}
 
 {% block content %}
@@ -38,7 +74,9 @@
             <div class="panel panel-primary">
                 <div class="panel-heading">玩家 {{ player.account }} 信息</div>
                 <div class="panel-body">
-                    <form class="form-horizontal" method="post" action="{% url 'contract_player' %}">
+                    <form class="form-horizontal" id="_contact-form"
+                          data-validator-option="{theme:'bootstrap', timely:1, stopOnError:true}"
+                          method="post" action="{% url 'contract_player' %}">
                         {% csrf_token %}
                         <input type="hidden" name="player_id" value="{{ player.id }}" />
                         <div class="form-group responsive-utilities-test hidden-on">
@@ -65,7 +103,10 @@
                         <div class="form-group">
                             <label for="inputQQ" class="col-sm-1 control-label">QQ 号码</label>
                             <div class="col-sm-3">
-                                <input type="text" class="form-control" name="qq" id="inputQQ" placeholder="QQ" {% if player.qq %}value="{{ player.qq }}"{% endif %} />
+                                <input type="text" class="form-control" name="qq" id="inputQQ"
+                                       data-rule="required(contact_success); qq"
+                                       data-msg-contact_success="当获取到QQ号码时，才可以标记为联系成功！"
+                                       placeholder="QQ" {% if player.qq %}value="{{ player.qq }}"{% endif %} />
                             </div>
                             <label for="inputStatus" class="col-sm-1 control-label">标记状态</label>
                             <div class="col-sm-3">
@@ -95,7 +136,7 @@
                             <label class="col-sm-1 control-label">充值次数</label>
                             <div class="col-sm-1">
                                 <p class="form-control-static">
-                                    <span class="label label-info static-p">{{ player.charge_count|default:'未充值' }}</span>
+                                    <span class="label label-info static-p">{{ player.charge_count|default:'暂无数据' }}</span>
                                 </p>
                             </div>
                             <label class="col-sm-1 control-label">充值总额</label>

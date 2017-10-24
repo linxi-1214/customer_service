@@ -1,5 +1,5 @@
 {% load html_controls %}
-<form id="{{ form.id }}" action="{{ form.action }}" method="{{ form.method }}" class="{{ form.class }}">
+<form id="{{ form.id }}" action="{{ form.action }}" method="{{ form.method }}" class="{{ form.class }}" {{ form.attrs|safe }}>
     {% csrf_token %}
     {% for field in form.fields %}
         {% text field %}

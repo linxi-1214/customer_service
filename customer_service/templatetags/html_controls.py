@@ -13,7 +13,7 @@ def control_decorator(control_type):
                 return ''
             wrapped_html = '<div class="form-group {group_css}">\n'
             if field_info.get('label') and field_info.get('type') != 'group_button':
-                wrapped_html += '    <label class="col-form-label{label_class}">{label}</label>\n'
+                wrapped_html += '    <label class="control-label{label_class}">{label}</label>\n'
             wrapped_html += generate_func(field_info)
             if field_info.get('help_text'):
                 wrapped_html += '    <small id="{help_id}" class="form-text text-muted">{help_text}</small>\n'
@@ -190,8 +190,10 @@ def generate_select(field_info):
 
 @control_decorator('password')
 def _password_html(field_info):
-    _html = '<input type="password" class="form-control" name="{name}" id="{id}" placeholder="Password" />\n'.format(
-        name=field_info.get('name', ''), id=field_info.get('id', '')
+    _html = '<input type="password" {attrs} class="form-control" name="{name}" ' \
+            'id="{id}" placeholder="Password" />\n'.format(
+        name=field_info.get('name', ''), id=field_info.get('id', ''),
+        attrs=" ".join(['%s="%s"' % attr for attr in field_info.get('attrs', {}).items()])
     )
 
     return _html
