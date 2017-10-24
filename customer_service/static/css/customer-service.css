@@ -31,3 +31,16 @@ ol.breadcrumb {
     margin-bottom: 4px;
     font-weight: normal;
 }
+
+
+/* custom css */
+a.delete {color: #2d4373}
+a:hover.delete {color: #5897fb}
+a.edit {color: #0c0c0c}
+a:hover.edit {color: #000000}
+a:hover.play {color: #0056b3}
+a.play {color: #007bff}
+a.download {color: green}
+a:hover.download {color: darkgreen}
+a.contact {color: #3f903f}
+a:hover.contact {color: #4cae4c}

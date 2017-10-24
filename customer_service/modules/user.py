@@ -258,12 +258,14 @@ class UserManager:
                     {
                         'icon': 'fa-edit',
                         'tooltip': u'编辑',
+                        'theme': ' edit ',
                         'href': reverse('edit_user', args=(user_obj.id,))
                     },
                     {
                         'href': '#',
                         'icon': 'fa-trash-o',
                         'tooltip': u'删除',
+                        'theme': ' delete ',
                         'func': 'delete_user("{url}", {id}, "{label}")'.format(
                             url=delete_url, id=user_obj.id, label=user_obj.loginname
                         )

@@ -129,12 +129,14 @@ class RoleManager:
                     {
                         'icon': 'fa-edit',
                         'tooltip': u'编辑',
+                        'theme': ' edit ',
                         'href': reverse('edit_role', args=(role_obj.id,))
                     },
                     {
                         'href': '#',
                         'icon': 'fa-trash-o',
                         'tooltip': u'删除',
+                        'theme': ' delete ',
                         'func': 'delete_role("{url}", {id}, "{name}")'.format(
                             url=delete_url, id=role_obj.id, name=role_obj.name
                         )

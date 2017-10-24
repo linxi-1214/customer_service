@@ -131,12 +131,14 @@ class GameManager:
                     {
                         'icon': 'fa-edit',
                         'tooltip': u'编辑',
+                        'theme': ' edit ',
                         'href': reverse('edit_game', args=(game_obj.id,))
                     },
                     {
                         'href': '#',
                         'icon': 'fa-trash-o',
                         'tooltip': u'删除',
+                        'theme': ' delete ',
                         'func': 'delete_game("{url}", {id}, "{name}")'.format(
                             url=delete_url, id=game_obj.id, name=game_obj.name
                         )

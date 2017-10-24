@@ -141,6 +141,36 @@ class PlayerManager:
         return top_form
 
     @staticmethod
+    def _actions(user, player_obj, delete_url):
+        if user.role_id == settings.SERVICE_ROLE:
+            return [
+                {
+                    'icon': 'fa-phone-square',
+                    'tooltip': u'继续联系',
+                    'theme': ' contact ',
+                    'href': "%s?player=%d" % (reverse('contract_player'), player_obj.id)
+                }
+            ]
+        else:
+            return [
+                {
+                    'icon': 'fa-edit',
+                    'tooltip': u'编辑',
+                    'theme': ' edit ',
+                    'href': reverse('edit_player', args=(player_obj.id,))
+                },
+                {
+                    'href': '#',
+                    'icon': 'fa-trash-o',
+                    'tooltip': u'删除',
+                    'theme': ' delete ',
+                    'func': 'delete_player("{url}", {id}, "{label}")'.format(
+                        url=delete_url, id=player_obj.id, label=player_obj.account
+                    )
+                }
+            ]
+
+    @staticmethod
     def index(user):
         sql = """
             SELECT
@@ -313,21 +343,7 @@ class PlayerManager:
                         {'text': _attr(account_log_dict, player_obj.id, 'last_charge_time')},
                         {'text': _attr(bind_info_dict, player_obj.id, 'result')}
                     ],
-                    'actions': [
-                        {
-                            'icon': 'fa-edit',
-                            'tooltip': u'编辑',
-                            'href': reverse('edit_player', args=(player_obj.id,))
-                        },
-                        {
-                            'href': '#',
-                            'icon': 'fa-trash-o',
-                            'tooltip': u'删除',
-                            'func': 'delete_player("{url}", {id}, "{label}")'.format(
-                                url=delete_url, id=player_obj.id, label=player_obj.account
-                            )
-                        }
-                    ]
+                    'actions': PlayerManager._actions(user, player_obj, delete_url)
                 } for player_obj in player_qry_set
             ]
         else:
@@ -680,7 +696,7 @@ class PlayerManager:
                         'icon': 'fa-play-circle',
                         'tooltip': u'查看导入结果',
                         'label': u'',
-                        'theme': 'btn-warning',
+                        'theme': ' play ',
                         # 'href': reverse('import_detail', args=(import_record.id,))
                         'href': '#',
                         'func': 'import_result_detail("%s");' % reverse('import_detail', args=(import_record.id, ))
@@ -689,7 +705,7 @@ class PlayerManager:
                         'icon': 'fa-download',
                         'tooltip': u'下载',
                         'href': '#',
-                        'theme': 'btn-warning'
+                        'theme': ' download '
                     }
                 ]
             } for import_record in import_records
@@ -1012,27 +1028,27 @@ class PlayerManager:
 
         locked = locked_param == '1'
 
-        changed_cols = {}
-
         if player_obj.username != username.strip():
-            changed_cols['username'] = username.strip()
+            player_obj.username = username.strip()
 
         if player_obj.qq != qq.strip():
-            changed_cols['qq'] = qq.strip()
+            player_obj.qq = qq.strip()
 
-        if player_obj.locked == locked:
-            changed_cols['locked'] = locked
-            changed_cols['locked_by_user'] = user
-            changed_cols['locked_time'] = datetime.now()
-
-        if changed_cols:
-            Player.objects.filter(id=player_id).update(**changed_cols)
+        if player_obj.locked != locked:
+            player_obj.locked = locked
+            player_obj.locked_by_user = user if locked else None
+            player_obj.locked_time = datetime.now() if locked else None
 
         if status:
             try:
                 status_obj = ContractResult.objects.get(id=status)
             except ObjectDoesNotExist:
                 return None
+
+            if status_obj.bind:
+                player_obj.locked_by_user = user
+                player_obj.locked = True
+                player_obj.locked_time = datetime.now()
 
             PlayerBindInfo.objects.create(
                 user=user,
@@ -1043,6 +1059,8 @@ class PlayerManager:
                 in_effect=True,
                 note=notes
             )
+
+        player_obj.save()
 
         return player_obj
 
@@ -1127,7 +1145,6 @@ class PlayerManager:
         game_field_info = []
         game_field_reg = re.compile(r'^game_id([0-9]+)')
         for field_name, field_value in params.items():
-            print(field_name, field_value)
             m = game_field_reg.match(field_name)
             if m is not None:
                 game_id = m.group(1)

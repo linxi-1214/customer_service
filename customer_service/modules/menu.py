@@ -291,12 +291,14 @@ class MenuManager:
                     {
                         'icon': 'fa-edit',
                         'tooltip': u'编辑',
+                        'theme': ' edit ',
                         'href': reverse('edit_menu', args=(menu_obj.id,))
                     },
                     {
                         'href': '#',
                         'icon': 'fa-trash-o',
                         'tooltip': u'删除',
+                        'theme': ' delete ',
                         'func': 'delete_menu("{url}", {id}, "{label}")'.format(
                             url=delete_url, id=menu_obj.id, label=menu_obj.label
                         )

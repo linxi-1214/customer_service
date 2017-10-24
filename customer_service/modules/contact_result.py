@@ -230,12 +230,14 @@ class ContactResultManager:
                     {
                         'icon': 'fa-edit',
                         'tooltip': u'编辑',
+                        'theme': ' edit ',
                         'href': reverse('edit_result', args=(result_obj.id,))
                     },
                     {
                         'href': '#',
                         'icon': 'fa-trash-o',
                         'tooltip': u'删除',
+                        'theme': ' delete ',
                         'func': 'delete_result("{url}", {id}, "{label}")'.format(
                             url=delete_url, id=result_obj.id, label=result_obj.result
                         )
