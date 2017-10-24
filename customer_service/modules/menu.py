@@ -243,9 +243,21 @@ class MenuManager:
         if parent_menu_id.strip() == '':
             parent_menu_id = 0
 
-        update_rows = Menu.objects.filter(id=menu_id).update(
-            label=menu_label, icon=menu_icon, name=menu_name, parent=parent_menu_id
-        )
+        try:
+            menu = Menu.objects.get(id=menu_id)
+        except ObjectDoesNotExist:
+            return 0
+
+        chg_flag = menu_label != menu.label or menu_icon != menu.icon or \
+                   menu.name != menu_name or menu.parent != parent_menu_id
+
+        if chg_flag:
+            menu.label = menu_label
+            menu.icon = menu_icon
+            menu.name = menu_name
+            menu.parent = parent_menu_id
+
+            menu.save()
 
         rel_qry_set = RoleBindMenu.objects.filter(menu=menu_id)
 
@@ -256,13 +268,22 @@ class MenuManager:
             role_id = int(role_id)
             if role_id not in db_role_ids:
                 RoleBindMenu.objects.create(role_id=role_id, menu_id=menu_id)
+                # 此处还要加上所选菜单的父菜单，因为如果直接给子菜单绑定权限的话呢，还是不能根据父菜单查到
+                # modify at 2017-10-24 15:02
+                if menu.parent != 0:
+                    RoleBindMenu.objects.get_or_create(role_id=role_id, menu_id=menu.parent)
+                    try:
+                        menu_parent = Menu.objects.get(id=menu.parent)
+                    except ObjectDoesNotExist:
+                        if menu_parent.parent != 0:
+                            RoleBindMenu.objects.get_or_create(role_id=role_id, menu_id=menu_parent.parent)
             else:
                 db_role_ids.remove(role_id)
 
         if db_role_ids:
-            RoleBindMenu.objects.filter(role_id__in=db_role_ids).delete()
+            RoleBindMenu.objects.filter(role_id__in=db_role_ids, menu=menu_id).delete()
 
-        return update_rows
+        return 1
 
     @staticmethod
     def delete(menu_id):
