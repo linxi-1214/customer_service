@@ -31,6 +31,7 @@ class ServiceManager:
                           'vendor/jqplot/jqplot.dateAxisRenderer.js',
                           'vendor/jqplot/jqplot.canvasAxisTickRenderer.js',
                           'vendor/jqplot/jqplot.canvasTextRenderer.js',
+                          'vendor/jqplot/jqplot.categoryAxisRenderer.js',
                           'vendor/datatables/js/jquery.dataTables.min.js',
                           'vendor/datatables/js/dataTables.bootstrap4.min.js',
                           'common/date/dateRange.js',
@@ -98,7 +99,7 @@ class ServiceManager:
                                 "button_type": "button",
                                 "click": '"generate_date(\'week\');"',
                                 "icon": "fa-minus-circle",
-                                "extra_class": "btn-primary form-control delete-icon-button",
+                                "extra_class": "btn-primary delete-icon-button",
                                 "label": u'近一周',
                                 "tooltip_position": 'right',
                                 "group_css": "col-lg-1"
@@ -107,7 +108,7 @@ class ServiceManager:
                                 "type": "group_button",
                                 "button_type": "button",
                                 "click": '"generate_date(\'one month\');"',
-                                "extra_class": "btn-primary form-control delete-icon-button",
+                                "extra_class": "btn-primary delete-icon-button",
                                 "label": u'近一月',
                                 "tooltip_position": 'right',
                                 "group_css": "col-lg-1"
@@ -116,7 +117,7 @@ class ServiceManager:
                                 "type": "group_button",
                                 "button_type": "button",
                                 "click": '"generate_date(\'three month\');"',
-                                "extra_class": "btn-primary form-control delete-icon-button",
+                                "extra_class": "btn-primary delete-icon-button",
                                 "label": u'近三月',
                                 "tooltip_position": 'right',
                                 "group_css": "col-lg-1"

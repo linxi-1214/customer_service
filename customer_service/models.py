@@ -229,7 +229,7 @@ class AccountLog(models.Model):
     game = models.ForeignKey(Game, null=False)
     recorder = models.ForeignKey(User, null=False)      # 充值记录员
     money = models.FloatField(default=0)
-    charge_time = models.DateTimeField(null=False)
+    charge_time = models.DateTimeField(null=True)
     timestamp = models.DateTimeField(auto_now=True)
 
     class Meta:

@@ -83,29 +83,20 @@ class PlayerManager:
             "fields": [
                 {
                     "type": "text",
-                    "label": u"账号",
+                    "placeholder": u"玩家账号",
                     "name": "account",
                     "id": "_account",
                     "attrs": {"style": "width: 120px; margin-right: 10px"}
                 },
                 {
-                    "type": "select",
-                    "label": u"游戏",
-                    "name": "game_name",
-                    "id": "_game_name",
-                    "options": game_obj_dict,
-                    "attrs": {'style': "margin-right: 10px; min-width: 120px;"}
-                },
-                {
                     "type": "text",
-                    "label": u"&nbsp;&nbsp;&nbsp;手机号",
+                    "placeholder": u"手机号",
                     "name": "mobile",
                     "id": "_mobile",
                     "attrs": {'style': "margin-right: 10px"}
                 },
                 {
                     "type": "text",
-                    "label": u"充值金额",
                     "name": "charge_money_min",
                     "id": "_charge_money_min",
                     "placeholder": "¥",
@@ -122,6 +113,14 @@ class PlayerManager:
                     "attrs": {
                         "style": "width: 80px; margin-right: 10px;",
                     }
+                },
+                {
+                    "type": "select",
+                    "label": u"游戏",
+                    "name": "game_name",
+                    "id": "_game_name",
+                    "options": game_obj_dict,
+                    "attrs": {'style': "margin-right: 10px; min-width: 120px;"}
                 },
                 {
                     "type": "button",
@@ -1365,7 +1364,7 @@ class PlayerManager:
             },
             "form": {
                 "method": "post",
-                "action": "#",
+                "action": "",
                 "fields": [
                     {
                         "type": "group",
@@ -1392,8 +1391,8 @@ class PlayerManager:
                             },
                             {
                                 "type": "group_button",
-                                "label": u'<i class="fa fa-info-circle"></i>  查&nbsp;&nbsp;&nbsp;&nbsp;看',
-                                "extra_class": "btn-primary form-control delete-icon-button",
+                                "label": u'<i class="fa fa-info-circle"></i>  查&nbsp;&nbsp;看',
+                                "extra_class": "btn-primary delete-icon-button",
                                 "button_type": "submit",
                                 "group_css": "col-lg-2"
                             }

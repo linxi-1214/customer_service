@@ -7,12 +7,12 @@ var report_table;
 function draw_chart(data) {
     plot1 = $.jqplot("_customer-service-chart", data.line_data, {
         seriesColors: [
+            "#6B8E23", "#4169E1",
+            "#4682B4", "#6A5ACD",
             "#9ACD32", "#D02090",
             "#EE82EE", "#40E0D0",
             "#FF6347", "#008080",
-            "#4682B4", "#6A5ACD",
-            "#87CEEB", "#2E8B57",
-            "#4169E1", "#6B8E23"
+            "#87CEEB", "#2E8B57"
         ], // 默认显示的分类颜色，如果分类的数量超过这里的颜色数量，则从该队列中第一个位置开始重新取值赋给相应的分类
         title: {
             text: '客服工作报告曲线图', //设置当前图的标题
@@ -24,6 +24,11 @@ function draw_chart(data) {
             location: 'ne',
             rowSpacing: '0px',
             labels: data.labels,
+        },
+        seriesDefaults: {
+            pointLabels: {
+                show: true,
+            }
         },
         axes: {
             xaxis: {
@@ -53,7 +58,8 @@ function draw_chart(data) {
         grid: {
             drawBorder: false,
             shadow: false,
-            background: "white"
+            background: "rgba(67, 72, 87, 0.32)",
+            gridLineColor: "#434857"
         }
 
     });
@@ -101,7 +107,8 @@ function draw_table(data) {
                     info: "当前显示<b>_START_</b>至<b>_END_</b>项  共 <b>_TOTAL_</b> 项",
                     lengthMenu: "每页显示 _MENU_ 项",
                     loadingRecords: "正在加载...",
-                    search: "搜索:",
+                    search: '<div class="asr bld">_INPUT_<span class="bv bdb"></span></div>',
+                    searchPlaceholder: "搜索...",
                     zeroRecords: "无匹配项",
                     paginate: {
                         "next": "下一页",

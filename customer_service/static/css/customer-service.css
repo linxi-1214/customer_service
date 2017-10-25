@@ -1,6 +1,7 @@
 ol.breadcrumb {
     background-color: #343a40 !important;
-    min-height: 40px;
+    min-height: 20px;
+    border-radius: 0;
     font-size: 15px;
     font-style: italic;
     font-family: "Roboto", "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
@@ -32,6 +33,18 @@ ol.breadcrumb {
     font-weight: normal;
 }
 
+table.dataTable tbody td.select-checkbox:before, table.dataTable tbody th.select-checkbox:before {
+    border: 1px solid #fff;
+    border-radius: 2px;
+    margin-top: -1px;
+}
+table.dataTable tr.selected td.select-checkbox:after, table.dataTable tr.selected th.select-checkbox:after {
+    margin-top: -4px;
+}
+table.dataTable tbody>tr.selected, table.dataTable tbody>tr>.selected {
+    background-color: transparent;
+}
+
 
 /* custom css */
 a.delete {color: #2d4373}
@@ -44,3 +57,26 @@ a.download {color: green}
 a:hover.download {color: darkgreen}
 a.contact {color: #3f903f}
 a:hover.contact {color: #4cae4c}
+
+
+/*.form-control {*/
+    /*color: #fff;*/
+    /*background-color: #2E68AA;*/
+    /*border-color: #2E68AA;*/
+/*}*/
+
+/*.form-control:focus {*/
+    /*background-color: #fff;*/
+    /*color: black;*/
+/*}*/
+
+/*.form-control::placeholder {*/
+    /*color: #82ABBA;*/
+    /*opacity: 1;*/
+/*}*/
+
+/*.form-control[disabled], .form-control[readonly] {*/
+    /*color: #fff;*/
+    /*background-color: #2E68AA;*/
+    /*border-color: #2E68AA;*/
+/*}*/

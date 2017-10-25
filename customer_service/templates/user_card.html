@@ -59,7 +59,7 @@
     </div>
     <div class="row">
         <div class="col-lg-12">
-            <div class="panel panel-warning">
+            <div class="panel panel-yellow">
                 <div class="panel-heading"><i class="fa fa-star"> 使用提示</i></div>
                 <div class="panel-body">
                 1. 玩家的获取是根据导入顺序先后返回的<br>
@@ -80,12 +80,9 @@
                         {% csrf_token %}
                         <input type="hidden" name="player_id" value="{{ player.id }}" />
                         <div class="form-group responsive-utilities-test hidden-on">
-                            <label class="col-sm-1 control-label">账&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;号</label>
+                            <label class="col-sm-1 control-label">账&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;号</label>
                             <div class="col-sm-3">
-                                <p class="form-control-static">
-                                    <span class="label label-primary static-p">{{ player.account }}</span>
-                                </p>
-{#                                <p class="form-control-static">{{ player.account }}</p>#}
+                                <input type="text" class="form-control" value="{{ player.account }}" readonly/>
                             </div>
                             <label for="inputUsername" class="col-sm-1 control-label">姓&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;名</label>
                             <div class="col-sm-3">
@@ -93,11 +90,8 @@
                             </div>
                             <label class="col-sm-1 control-label">手&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;机</label>
                             <div class="col-sm-3">
-                                <p class="form-control-static">
-                                    <span class="label label-primary static-p">
-                                        {{ player.mobile|default:"--" }}
-                                    </span>
-                                </p>
+                                <input type="text" class="form-control" name="mobile"
+                                       id="inputMobile" value="{{ player.mobile|default:'--' }}"/>
                             </div>
                         </div>
                         <div class="form-group">
@@ -167,7 +161,7 @@
                         <div class="form-group">
                             <label class="col-sm-1 control-label">充值记录</label>
                             <div class="col-sm-11">
-                                <div class="panel panel-green">
+                                <div class="panel panel-primary">
                                     <div class="panel-heading">注册游戏&充值记录</div>
                                     <div class="panel-body">
                                         {% include "table.html" %}
@@ -177,17 +171,14 @@
                         </div>
                         <div class="form-group">
                             <div class="col-lg-offset-1 col-sm-11">
-                                <button type="submit" class="btn btn-primary btn-sm btn-outline btn-block">保&nbsp;&nbsp;&nbsp;&nbsp;存</button>
+                                <button type="submit" class="btn btn-primary btn-sm btn-outline ">保&nbsp;&nbsp;&nbsp;&nbsp;存</button>
+                                <button type="submit" class="btn btn-success btn-sm btn-outline ">保存并查看下一个</button>
+                                <button type="button" class="btn btn-info btn-sm btn-outline pull-right"
+                                        onclick="jump_to('{% url 'contract_player' %}?current={{ player.id }}');"
+                                >下一个</button>
                             </div>
                         </div>
                     </form>
-                </div>
-                <div class="panel-footer">
-                    <nav aria-label="...">
-                    <ul class="pager">
-                        <li class="next"><a href="{% url 'contract_player' %}?current={{ player.id }}">下一个</a></li>
-                    </ul>
-                    </nav>
                 </div>
             </div>
         </div>

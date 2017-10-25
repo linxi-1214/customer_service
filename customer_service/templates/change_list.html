@@ -5,6 +5,7 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'vendor/bootstrap-social/bootstrap-social.css' %}"/>
     <link rel="stylesheet" href="{% static 'vendor/datatables/css/dataTables.bootstrap4.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'vendor/datatables/css/select.bootstrap4.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'common/selector2/css/select2.min.css' %}"/>
 {% endblock %}
 
@@ -92,6 +93,7 @@
     <script type="text/javascript" src="{% static 'vendor/datatables/js/jquery.dataTables.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'common/selector2/js/select2.full.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'vendor/datatables/js/dataTables.bootstrap4.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vendor/datatables/js/dataTables.select.min.js' %}"></script>
     {% for script in media.js %}
         {{ script|safe }}
     {% endfor %}

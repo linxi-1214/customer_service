@@ -26,6 +26,10 @@ function delete_player_submit(url, player_id) {
     })
 }
 
+function jump_to(url) {
+    location.href = url;
+}
+
 function player_query() {
     var account = $("#_account").val();
     var game = $("#_game_name option:selected").text();
