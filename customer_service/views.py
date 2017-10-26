@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 from datetime import datetime
 
 from django.template.response import TemplateResponse, HttpResponse
@@ -22,7 +23,7 @@ from customer_service.models import Player
 from web_service import settings
 from customer_service.decorator import permission_need, ADMIN, DATA_USER, CUSTOMER_SERVICE
 
-
+logger = logging.getLogger(__name__)
 # Create your views here.
 
 
@@ -199,6 +200,18 @@ def player_index(request):
 
 @login_required
 @permission_need([ADMIN, DATA_USER])
+def player_recycle_index(request):
+    context = PlayerManager.index(request.user, is_deleted=1)
+    menus = Context.menus(request.user)
+
+    context.update(menus=menus)
+
+    return TemplateResponse(request, "change_list.html", context=context)
+
+
+
+@login_required
+@permission_need([ADMIN, DATA_USER])
 def new_player(request):
     menus = Context.menus(request.user)
     if request.method == "GET":
@@ -284,21 +297,84 @@ def import_detail(request, import_id):
 @login_required
 @permission_need([ADMIN, DATA_USER])
 @require_http_methods(["POST"])
-@use_kwargs({'id': fields.Int(required=True, validate=lambda id: id > 0)})
-def delete_player(request, id):
-    player_obj = PlayerManager.delete(id)
+@use_kwargs({
+    'id': fields.DelimitedList(fields.Int(), required=True)
+})
+def recycle_player(request, id):
+    ret_context = {'code': 0, 'message': u'恢复玩家成功！'}
+    try:
+        Player.objects.filter(id__in=id).update(is_deleted=0)
+    except Exception:
+        logger.exception("recycle player error: ")
+        ret_context.update(code=1, message=u'恢复玩家失败，内部错误！')
+
+    return HttpResponse(content=json.dumps(ret_context), content_type='application/json')
+
+
+@csrf_exempt
+@login_required
+@permission_need([ADMIN, DATA_USER])
+@require_http_methods(["POST"])
+@use_kwargs({
+    'id': fields.Int(required=True, validate=lambda id: id > 0),
+    'force': fields.Bool(required=False, missing=False),
+    'really': fields.Bool(required=False, missing=False)
+})
+def delete_player(request, id, force=False, really=False):
+    can_delete, player_obj = PlayerManager.delete(id, force, really)
+
+    # False, obj: 不可以删除，需要确认
+    # False, None: 可以删除，但是删除失败
+    # True, None: 可以删除，删除成功
+    # True, obj: 可以删除，删除成功
 
     if request.is_ajax():
         content = {'code': 0}
         if player_obj is None:
-            content.update(message=u'游戏删除成功！')
+            content.update(message=u'玩家删除成功！' if can_delete else u'玩家删除失败！', need_verify=False)
         else:
-            content.update(message=u'游戏［ %s ］删除成功！' % player_obj.name)
+            if can_delete:
+                content.update(message=u'玩家［ %s ］删除成功！' % player_obj.account, need_verify=False)
+            else:
+                content.update(need_verify=True, message=u'玩家［ %s ] 已经被客服锁定，是否强制删除？' % player_obj.account)
         return HttpResponse(content=json.dumps(content), content_type='application/json')
 
     else:
         player_index_url = reverse('player_index')
         return HttpResponseRedirect(player_index_url)
+
+
+@csrf_exempt
+@login_required
+@permission_need([ADMIN, DATA_USER])
+@require_http_methods(["POST"])
+@use_kwargs(
+    {
+        'id': fields.DelimitedList(fields.Int(), required=True),
+        'force': fields.Bool(required=False, missing=False),
+        'really': fields.Bool(required=False, missing=False)
+    })
+def delete_player_multiple(request, id, force=False, really=False):
+    can_delete, locked_player_set = PlayerManager.delete(id, force, really)
+
+    # True, None: 可以删除，删除成功
+    # False, obj: 不可以删除，需要确认
+    # False, None: 可以删除，但是删除失败
+
+    if locked_player_set is None:
+        if can_delete:
+            return HttpResponse(content=json.dumps({'code': 0, 'message': u'玩家删除成功！', 'need_verify': False}),
+                                content_type='application/json')
+        else:
+            return HttpResponse(content=json.dumps({'code': 1, 'message': u'玩家删除失败！', 'need_verify': False}),
+                                content_type='application/json')
+    else:
+        locked_player_list = [locked_player.account for locked_player in locked_player_set]
+        locked_player_str = '%s 等' % ", ".join(locked_player_list[:5])
+
+        return HttpResponse(content=json.dumps({
+            'code': 0, 'message': u'玩家 %s 已被客服锁定，是否强制删除？' % locked_player_str, 'need_verify': True
+        }), content_type='application/json')
 
 
 @login_required

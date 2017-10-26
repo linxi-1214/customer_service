@@ -206,14 +206,19 @@ def generate_password(field_info):
 
 @control_decorator('text')
 def _text_html(field_info):
-    _html = '<input type="text" class="form-control{extra_class}" id="{id}" value="{value}" ' \
-            'placeholder="{placeholder}" name="{name}"' \
-            ' aria-describedby="{help_id}" {attrs} {disabled}>'.format(
+    _html = ""
+    if field_info.get('before'):
+        _html += '<div class="asr bld">'
+    _html += '<input type="text" class="form-control{extra_class}" id="{id}" value="{value}" ' \
+             'placeholder="{placeholder}" name="{name}"' \
+             ' aria-describedby="{help_id}" {attrs} {disabled}>'.format(
         id=field_info.get('id', ''), placeholder=field_info.get('placeholder', ''),
         name=field_info.get('name', ''), help_id=field_info.get('help_id', ''), value=field_info.get('value', ''),
         disabled=field_info.get('disabled', ''), extra_class=' %s' % field_info.get('extra_class', ''),
         attrs=" ".join(['%s="%s"' % attr for attr in field_info.get('attrs', {}).items()])
     )
+    if field_info.get('before'):
+        _html += '<span class="bv {before}"></span></div>'.format(before=field_info.get('before'))
 
     return _html
 

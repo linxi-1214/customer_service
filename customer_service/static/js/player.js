@@ -6,23 +6,91 @@ var game_div_index = 0;
 var game_count;
 var table;
 
-function delete_player(url, player_id, player_label) {
+function delete_player(dom_obj, url, player_id, player_label, really_delete) {
     var modal = $("#_player_delete_modal");
     modal.find('.modal-title').text('删除确认');
-    modal.find('.modal-body').text('请确认是否删除［' + player_label + '］');
+    var delete_tip = '请确认是否删除［' + player_label + '］';
+    if (really_delete)
+        delete_tip += '<b>删除后将无法恢复！</b>'
+
+    modal.find('.modal-body').html(delete_tip);
     modal.find('#_game_del_modal_submit').on('click', function (e) {
         modal.modal('hide');
-        delete_player_submit(url, player_id);
+        delete_player_submit(dom_obj, url, player_id, really_delete);
+        modal.find('#_game_del_modal_submit').off('click');
     });
     modal.modal('show');
 }
 
-function delete_player_submit(url, player_id) {
+function recycle_player(dom_obj, url, player_id, player_label) {
+    var modal = $("#_player_delete_modal");
+    modal.find('.modal-title').text('恢复确认');
+    modal.find('.modal-body').text('请确认是否恢复玩家［' + player_label + '］');
+    modal.find('#_game_del_modal_submit').on('click', function (e) {
+        modal.modal('hide');
+        recycle_player_submit(dom_obj, url, player_id);
+        modal.find('#_game_del_modal_submit').off('click');
+    });
+    modal.modal('show');
+}
+
+function recycle_player_submit(dom_obj, url, player_id) {
     $.post(url, {id: player_id}, function (data, status) {
         if (status == "success") {
-            // $("#_game_del_modal_submit").modal('hide');
-            alert("删除成功！")
+            if (data.code == 0) {
+                var tr = $(dom_obj).closest('tr');
+                var t = $(dom_obj).closest('table');
+                var t_id = $(t).attr('id');
+                $("#" + t_id).DataTable()
+                    .row(tr)
+                    .remove()
+                    .draw();
+            }
+            alert(data.message);
+        } else {
+            alert("玩家恢复失败，内部错误！");
         }
+    })
+}
+
+function delete_player_submit(dom_obj, url, player_id, really_delete) {
+    $.post(url, {id: player_id, really: really_delete}, function (data, status) {
+        if (status == "success") {
+            // $("#_game_del_modal_submit").modal('hide');
+            if (data.need_verify) {
+                var _confirm = confirm(data.message);
+                if (_confirm == true) {
+                    $.post(url, {id: player_id, force: true, really: really_delete}, function (data, status) {
+                        if (status == "success") {
+                            if (data.code == 0) {
+                                var tr = $(dom_obj).closest('tr');
+                                var t = $(dom_obj).closest('table');
+                                var t_id = $(t).attr('id');
+                                $("#" + t_id).DataTable()
+                                    .row(tr)
+                                    .remove()
+                                    .draw();
+                            }
+                            alert(data.message);
+                        } else {
+                            alert("删除玩家失败，服务器内部错误！")
+                        }
+                    });
+                }
+            } else {
+                if (data.code == 0) {
+                    var tr = $(dom_obj).closest('tr');
+                    var t = $(dom_obj).closest('table');
+                    var t_id = $(t).attr('id');
+                    $("#" + t_id).DataTable()
+                        .row(tr)
+                        .remove()
+                        .draw();
+                }
+                alert(data.message)
+            }
+        } else
+            alert("删除玩家失败，服务器内部错误！");
     })
 }
 
@@ -35,13 +103,13 @@ function player_query() {
     var game = $("#_game_name option:selected").text();
     var mobile = $("#_mobile").val();
 
-    $('#_player-table').DataTable().column( 1 ).search(
+    $('#_player-table').DataTable().column( 2 ).search(
         account, true, true
     ).draw();
-    $('#_player-table').DataTable().column( 5).search(
+    $('#_player-table').DataTable().column( 6 ).search(
         game, true, true
     ).draw();
-    $('#_player-table').DataTable().column( 3 ).search(
+    $('#_player-table').DataTable().column( 4 ).search(
         mobile, true, true
     ).draw();
 

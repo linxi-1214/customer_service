@@ -99,7 +99,7 @@ class ServiceManager:
                                 "button_type": "button",
                                 "click": '"generate_date(\'week\');"',
                                 "icon": "fa-minus-circle",
-                                "extra_class": "btn-primary delete-icon-button",
+                                "extra_class": "btn-outline btn-primary delete-icon-button",
                                 "label": u'近一周',
                                 "tooltip_position": 'right',
                                 "group_css": "col-lg-1"
@@ -108,7 +108,7 @@ class ServiceManager:
                                 "type": "group_button",
                                 "button_type": "button",
                                 "click": '"generate_date(\'one month\');"',
-                                "extra_class": "btn-primary delete-icon-button",
+                                "extra_class": "btn-outline btn-primary delete-icon-button",
                                 "label": u'近一月',
                                 "tooltip_position": 'right',
                                 "group_css": "col-lg-1"
@@ -117,7 +117,7 @@ class ServiceManager:
                                 "type": "group_button",
                                 "button_type": "button",
                                 "click": '"generate_date(\'three month\');"',
-                                "extra_class": "btn-primary delete-icon-button",
+                                "extra_class": "btn-outline btn-primary delete-icon-button",
                                 "label": u'近三月',
                                 "tooltip_position": 'right',
                                 "group_css": "col-lg-1"
@@ -127,7 +127,7 @@ class ServiceManager:
                     {
                         "type": "button",
                         "label": u'<i class="fa fa-bar-chart-o"></i> 查看报告',
-                        "extra_class": "btn-warning btn-sm btn-block",
+                        "extra_class": "btn-outline btn-warning btn-block",
                         "button_type": "button",
                         "click": 'draw_report("%s");' % reverse('user_report')
                     }

@@ -51,6 +51,18 @@
                     allowClear: false,
                     containerCssClass: 'table-select'
                 });
+                {% if table.buttons %}
+                    var button_row = $("div.dataTables_wrapper div:first-child");
+                    var length_col = button_row.children()[0];
+                    $(length_col).attr({'class': 'col-md-2'});
+                    var button_html = '<div class="col-md-4">';
+                    {% for button in table.buttons %}
+                        button_html += '<button type="button" class="btn btn-outline {{ button.class|default:'btn-primary' }}" onclick="{{ button.click }}">{{ button.text }}</button>&nbsp;&nbsp;';
+                    {% endfor %}
+                    button_html += "</div>";
+
+                    $(length_col).after(button_html);
+                {% endif %}
             })
             .DataTable({
                 columnDefs: [

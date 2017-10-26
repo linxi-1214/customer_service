@@ -16,6 +16,7 @@ url_name_dict = {
     'user_report': u'客服报告',
     'player_contact_detail': u'玩家详情',
     'change_password': u'修改密码',
+    'player_recycle_index': u'回收站',
 }
 
 

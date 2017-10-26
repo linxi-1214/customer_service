@@ -72,9 +72,14 @@ class PlayerManager:
         """
 
         game_objs = Game.objects.all()
+        result_objs = ContractResult.objects.all()
 
         game_obj_dict = [
             {'label': _game_obj.name, "value": _game_obj.id} for _game_obj in game_objs
+        ]
+
+        result_obj_dict = [
+            {'label': _result.result, "value": _result.id} for _result in result_objs
         ]
 
         top_form = {
@@ -83,14 +88,14 @@ class PlayerManager:
             "fields": [
                 {
                     "type": "text",
-                    "placeholder": u"玩家账号",
+                    "before": "game",
                     "name": "account",
                     "id": "_account",
-                    "attrs": {"style": "width: 120px; margin-right: 10px"}
+                    "attrs": {"style": "width: 150px; margin-right: 10px"}
                 },
                 {
                     "type": "text",
-                    "placeholder": u"手机号",
+                    "before": "mobile",
                     "name": "mobile",
                     "id": "_mobile",
                     "attrs": {'style': "margin-right: 10px"}
@@ -99,9 +104,9 @@ class PlayerManager:
                     "type": "text",
                     "name": "charge_money_min",
                     "id": "_charge_money_min",
-                    "placeholder": "¥",
+                    "before": "money",
                     "attrs": {
-                        "style": "width: 80px;"
+                        "style": "width: 120px;"
                     }
                 },
                 {
@@ -109,30 +114,38 @@ class PlayerManager:
                     "label": u"-",
                     "name": "charge_money_max",
                     "id": "_charge_money_max",
-                    "placeholder": "¥",
+                    "before": "money",
                     "attrs": {
-                        "style": "width: 80px; margin-right: 10px;",
+                        "style": "width: 120px; margin-right: 10px;",
                     }
                 },
                 {
                     "type": "select",
-                    "label": u"游戏",
                     "name": "game_name",
                     "id": "_game_name",
                     "options": game_obj_dict,
-                    "attrs": {'style': "margin-right: 10px; min-width: 120px;"}
+                    "attrs": {'style': "margin-right: 20px; min-width: 120px;"}
+                },
+                {
+                    "type": "select",
+                    "name": "result",
+                    "id": "_result",
+                    "options": result_obj_dict,
+                    "attrs": {'style': "margin-right: 20px; min-width: 120px;"}
                 },
                 {
                     "type": "button",
                     "button_type": "button",
                     "label": u'查&nbsp;&nbsp;询 <i class="fa fa-search"></i>',
-                    "click": "player_query(); return false;"
+                    "click": "player_query(); return false;",
+                    "extra_class": "btn-outline btn-primary",
+                    "attrs": {'style': 'margin-left: 20px;'}
                 },
                 {
                     "type": "button",
                     "button_type": "button",
                     "label": u'导出到 EXCEL <i class="fa  fa-sign-out"></i>',
-                    "extra_class": "btn-warning pull-right",
+                    "extra_class": "btn-outline btn-warning pull-right",
                     "click": "export_player();"
                 }
             ]
@@ -140,7 +153,9 @@ class PlayerManager:
         return top_form
 
     @staticmethod
-    def _actions(user, player_obj, delete_url):
+    def _actions(user, player_obj, is_deleted):
+        delete_url = reverse('delete_player')
+        recycle_url = reverse('recycle_player')
         if user.role_id == settings.SERVICE_ROLE:
             return [
                 {
@@ -151,26 +166,48 @@ class PlayerManager:
                 }
             ]
         else:
-            return [
-                {
-                    'icon': 'fa-edit',
-                    'tooltip': u'编辑',
-                    'theme': ' edit ',
-                    'href': reverse('edit_player', args=(player_obj.id,))
-                },
-                {
-                    'href': '#',
-                    'icon': 'fa-trash-o',
-                    'tooltip': u'删除',
-                    'theme': ' delete ',
-                    'func': 'delete_player("{url}", {id}, "{label}")'.format(
-                        url=delete_url, id=player_obj.id, label=player_obj.account
-                    )
-                }
-            ]
+            if is_deleted:
+                return [
+                    {
+                        'icon': 'fa-recycle',
+                        'tooltip': u'恢复玩家',
+                        'theme': ' recycle ',
+                        'href': "",
+                        'func': 'recycle_player(this, "{url}", {id}, "{label}"); return false;'.format(
+                            url=recycle_url, id=player_obj.id, label=player_obj.account
+                        )
+                    },
+                    {
+                        'href': '',
+                        'icon': 'fa-trash-o',
+                        'tooltip': u'删除',
+                        'theme': ' delete ',
+                        'func': 'delete_player(this, "{url}", {id}, "{label}", true); return false;'.format(
+                            url=delete_url, id=player_obj.id, label=player_obj.account
+                        )
+                    }
+                ]
+            else:
+                return [
+                    {
+                        'icon': 'fa-edit',
+                        'tooltip': u'编辑',
+                        'theme': ' edit ',
+                        'href': reverse('edit_player', args=(player_obj.id,))
+                    },
+                    {
+                        'href': '',
+                        'icon': 'fa-trash-o',
+                        'tooltip': u'删除',
+                        'theme': ' delete ',
+                        'func': 'delete_player(this, "{url}", {id}, "{label}", false); return false;'.format(
+                            url=delete_url, id=player_obj.id, label=player_obj.account
+                        )
+                    }
+                ]
 
     @staticmethod
-    def index(user):
+    def index(user, is_deleted=0):
         sql = """
             SELECT
                 player.id,
@@ -188,14 +225,12 @@ class PlayerManager:
             FROM player
                 LEFT JOIN
                 customer_service_user ON customer_service_user.id = player.locked_by_user_id
+            WHERE player.is_deleted = %s
         """
+        params = [is_deleted]
         if user.role_id != settings.ADMIN_ROLE:
-            sql += """
-                WHERE player.locked_by_user_id = %s
-            """
-            params = (user.id,)
-        else:
-            params = None
+            sql += "AND player.locked_by_user_id = %s"
+            params.append(user.id)
 
         with connection.cursor() as cursor:
             cursor.execute(sql, params)
@@ -320,7 +355,6 @@ class PlayerManager:
                         val = '--'
                     return val
 
-            delete_url = reverse('delete_player')
             tbody = [
                 {
                     'columns': [
@@ -342,7 +376,7 @@ class PlayerManager:
                         {'text': _attr(account_log_dict, player_obj.id, 'last_charge_time')},
                         {'text': _attr(bind_info_dict, player_obj.id, 'result')}
                     ],
-                    'actions': PlayerManager._actions(user, player_obj, delete_url)
+                    'actions': PlayerManager._actions(user, player_obj, is_deleted)
                 } for player_obj in player_qry_set
             ]
         else:
@@ -354,8 +388,31 @@ class PlayerManager:
             'vendor/xlsx/xlsx.full.min.js',
             'vendor/xlsx/Blob.js', 'vendor/xlsx/FileSaver.js',
             'vendor/xlsx/swfobject.js', 'vendor/xlsx/downloadify.min.js', 'vendor/xlsx/base64.min.js',
-            'js/export.js'
+            'js/export.js', 'js/table.js'
         ])
+
+        table_buttons = [
+            {
+                'text': u'全 选', 'class': 'btn-sm btn-success',
+                'click': "select_all(false, '_player-table');"
+            },
+            {
+                'text': u'反 选', 'class': 'btn-sm btn-success',
+                'click': "select_all(true, '_player-table');"
+            },
+            {
+                'text': u'删 除', 'class': 'btn-sm btn-danger',
+                'click': "delete_selected('_player-table', '%s', %s);" % (
+                    reverse('delete_player_multi'), "true" if is_deleted else "false")
+            }
+        ]
+        if is_deleted:
+            table_buttons.append(
+                {
+                    'text': u'恢 复', 'class': 'btn-sm btn-primary',
+                    "click": 'recycle_selected("_player-table", "%s");' % reverse('recycle_player')
+                }
+            )
 
         context = {
             'breadcrumb_items': [
@@ -373,6 +430,7 @@ class PlayerManager:
             'add_url_label': u'登记玩家信息',
             'table': {
                 'id': '_player-table',
+                'buttons': table_buttons,
                 'headers': [
                     {'text': u'账号'}, {'text': u'姓名'}, {'text': u'手机号'},
                     {'text': u'QQ号码'}, {'text': u'注册游戏'}, {'text': u'注册时间'},
@@ -562,16 +620,16 @@ class PlayerManager:
                     {
                         "type": "select",
                         "label": u'注册游戏',
-                        'name': 'game_id',
-                        'id': '_game_id',
+                        'name': 'game_id' + ('%s' % str(ind-1) if ind > 0 else ''),
+                        'id': '_game_id' + ('%s' % str(ind-1) if ind > 0 else ''),
                         'options': game_options['game_options'],
                         "group_css": "col-lg-4"
                     },
                     {
                         "type": "text",
                         "label": u'注册时间',
-                        "name": "game_time",
-                        "id": "_game_id",
+                        "name": "game_time" + ("%s" % str(ind-1) if ind > 0 else ''),
+                        "id": "_game_time" + ("%s" % str(ind-1) if ind > 0 else ''),
                         "group_css": "col-lg-4",
                         "value": game_options['reg_time'].strftime('%Y-%m-%d %H:%M:%S') if game_options['reg_time'] else ''
                     },
@@ -579,13 +637,13 @@ class PlayerManager:
                         "type": "icon_button",
                         "click": "delete_register_game(this);",
                         "icon": "fa-minus-circle",
-                        "extra_class": "btn-danger form-control delete-icon-button",
+                        "extra_class": "btn-danger delete-icon-button",
                         "tooltip": u'删除',
                         "tooltip_position": 'right',
                         "group_css": "col-lg-2"
                     }
                 ]
-            } for game_options in game_options_list
+            } for ind, game_options in enumerate(game_options_list)
         ]
 
         media = Media(js=['common/selector2/js/select2.full.js', 'js/player.js'],
@@ -1102,20 +1160,26 @@ class PlayerManager:
 
         registered_game_ids = ['%d' % register_game_obj.game_id for register_game_obj in register_game_objs]
 
+        registered_game_dict = dict([
+            ('%d' % _g.game_id, _g.register_time) for _g in register_game_objs
+        ])
+
+        print(game_field_info)
         for game_id, game_time in game_field_info.items():
             if game_id in registered_game_ids:
-                # 当前注册，在请求中，更新时间
-                RegisterInfo.objects.filter(
-                    player_id=player_id,
-                    game_id=game_id
-                ).update(register_time=game_time)
+                # 当前注册，如果在请求中，更新时间
+                if game_time != registered_game_dict[game_id]:
+                    RegisterInfo.objects.filter(
+                        player_id=player_id,
+                        game_id=game_id
+                    ).update(register_time=game_time)
+                registered_game_ids.remove(game_id)
             else:
                 RegisterInfo.objects.create(
                     player_id=player_id,
                     game_id=game_id,
                     register_time=game_time
                 )
-            registered_game_ids.remove(game_id)
 
         if registered_game_ids:
             RegisterInfo.objects.filter(
@@ -1125,14 +1189,39 @@ class PlayerManager:
         return player_obj
 
     @staticmethod
-    def delete(player_id):
-        try:
-            player_obj = Player.objects.get(id=player_id)
-            player_obj.delete()
-        except ObjectDoesNotExist:
-            player_obj = None
+    def delete(player_id, force_delete=False, really_delete=False):
+        if isinstance(player_id, (list, tuple)):
+            # check player if locked by service while force_delete and really_delete are both False
+            if not (force_delete or really_delete):
+                player_locked_set = Player.objects.filter(id__in=player_id, locked_by_user__isnull=False)
+                if player_locked_set.count() > 0:
+                    return False, player_locked_set
+            try:
+                if not really_delete:
+                    Player.objects.filter(id__in=player_id).update(is_deleted=True)
+                else:
+                    Player.objects.filter(id__in=player_id).delete()
+            except:
+                return False, None
 
-        return player_obj
+            return True, None
+        else:
+            try:
+                player_obj = Player.objects.get(id=player_id)
+                if not (force_delete or really_delete):
+                    if player_obj.locked_by_user is not None:
+                        return False, player_obj
+                if not really_delete:
+                    player_obj.is_deleted = True
+                    player_obj.save()
+                else:
+                    player_obj.delete()
+            except ObjectDoesNotExist:
+                player_obj = None
+            except:
+                return False, None
+
+            return True, player_obj
 
     @staticmethod
     def save(params):
@@ -1392,7 +1481,7 @@ class PlayerManager:
                             {
                                 "type": "group_button",
                                 "label": u'<i class="fa fa-info-circle"></i>  查&nbsp;&nbsp;看',
-                                "extra_class": "btn-primary delete-icon-button",
+                                "extra_class": "btn-outline btn-primary delete-icon-button",
                                 "button_type": "submit",
                                 "group_css": "col-lg-2"
                             }

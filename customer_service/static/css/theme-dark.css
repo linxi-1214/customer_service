@@ -28,6 +28,11 @@ body, #page-wrapper, #page-wrapper, .navbar-default {
 }
 
 body {color: #cfd2da;}
+.modal {color: #0c0c0c;}
+
+.nav .open>a, .nav .open>a:focus, .nav .open>a:hover {
+    background-color: #3b5998;
+}
 
 .nav > li > a:hover, .nav > li > a:focus, .nav > li > a.active, .sidebar ul li a.active {
     color: #fff;
@@ -141,6 +146,11 @@ hr {
 .bdb::before {
     content: "\e986";
 }
+
+.money::before {content: "\e93e"}
+.mobile::before {content: "\e958"}
+.game::before {content: "\e972"}
+
 .bv::before {
     position: relative;
     top: 2px;
