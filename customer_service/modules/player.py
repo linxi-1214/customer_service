@@ -16,6 +16,7 @@ from django.db import connection
 from django.conf import settings
 
 from customer_service.models import Menu, Role, RoleBindMenu
+from customer_service.tools.model import updated_fields, set_operator
 
 from customer_service.models import (
     Game, Player, RegisterInfo, PlayerImport, PlayerExport, AccountLog,
@@ -533,7 +534,7 @@ class PlayerManager:
                                 "type": "icon_button",
                                 "click": "delete_register_game(this);",
                                 "icon": "fa-minus-circle",
-                                "extra_class": "btn-danger form-control delete-icon-button",
+                                "extra_class": "btn-danger delete-icon-button",
                                 "tooltip": u'删除',
                                 "tooltip_position": 'right',
                                 "group_css": "col-lg-2"
@@ -677,14 +678,14 @@ class PlayerManager:
                         "label": u"姓名",
                         "name": "username",
                         "id": "_username",
-                        "value": player_obj.username
+                        "value": player_obj.username or ''
                     },
                     {
                         "type": "text",
                         "label": u"联系方式",
                         "name": "mobile",
                         "id": "_mobile",
-                        "value": player_obj.mobile
+                        "value": player_obj.mobile or ''
                     },
                     {
                         "type": "text",
@@ -692,7 +693,7 @@ class PlayerManager:
                         "name": "qq",
                         "id": "_qq",
                         "group_css": "previous-border",
-                        "value": player_obj.qq
+                        "value": player_obj.qq or ''
                     }
                 ]
             }
@@ -1085,6 +1086,9 @@ class PlayerManager:
 
         locked = locked_param == '1'
 
+        update_fields = updated_fields(player_obj, params, ['username', 'qq', 'locked'])
+        set_operator(player_obj, user)
+
         if player_obj.username != username.strip():
             player_obj.username = username.strip()
 
@@ -1107,7 +1111,7 @@ class PlayerManager:
                 player_obj.locked = True
                 player_obj.locked_time = datetime.now()
 
-            PlayerBindInfo.objects.create(
+            bind_info = PlayerBindInfo(
                 user=user,
                 player=player_obj,
                 is_bound=status_obj.bind,
@@ -1116,8 +1120,10 @@ class PlayerManager:
                 in_effect=True,
                 note=notes
             )
+            set_operator(bind_info, user)
+            bind_info.save()
 
-        player_obj.save()
+        player_obj.save(update_fields=update_fields)
 
         return player_obj
 
@@ -1133,11 +1139,17 @@ class PlayerManager:
         player_mobile = params.get('mobile', '')
         player_qq = params.get('qq', '')
 
+        update_fields = updated_fields(
+            player_obj, params, ['account', 'username', 'mobile', 'qq']
+        )
+
         game_field_info = {}
         game_field_reg = re.compile(r'^game_id([0-9]*)')
         for field_name, field_value in params.items():
             m = game_field_reg.match(field_name)
             if m is not None:
+                if not field_value:
+                    continue
                 game_id = m.group(1)
                 game_time = params.get('game_time%s' % game_id)
                 try:
@@ -1149,12 +1161,11 @@ class PlayerManager:
                         return {'msg': "时间格式不正确，格式如：2017-09-21 12:00:00"}
                 game_field_info[field_value] = game_time
 
-        Player.objects.filter(id=player_id).update(
-            account=account,
-            username=player_name,
-            mobile=player_mobile,
-            qq=player_qq
-        )
+        player_obj.account = account
+        player_obj.username = player_name
+        player_obj.mobile = player_mobile
+        player_obj.qq = player_qq
+        player_obj.save(update_fields=update_fields)
 
         register_game_objs = RegisterInfo.objects.filter(player_id=player_id)
 
@@ -1164,7 +1175,6 @@ class PlayerManager:
             ('%d' % _g.game_id, _g.register_time) for _g in register_game_objs
         ])
 
-        print(game_field_info)
         for game_id, game_time in game_field_info.items():
             if game_id in registered_game_ids:
                 # 当前注册，如果在请求中，更新时间
@@ -1224,7 +1234,7 @@ class PlayerManager:
             return True, player_obj
 
     @staticmethod
-    def save(params):
+    def save(user, params):
         account = params.get('account')
         player_name = params.get("username")
         player_mobile = params.get('mobile', '')
@@ -1249,12 +1259,14 @@ class PlayerManager:
                     'reg_time': game_time
                 })
 
-        player_obj = Player.objects.create(
+        player_obj = Player(
             account=account,
             username=player_name,
             mobile=player_mobile,
             qq=player_qq
         )
+        setattr(player_obj, 'operator', user)
+        player_obj.save()
 
         for game_field in game_field_info:
             RegisterInfo.objects.create(

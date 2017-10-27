@@ -209,7 +209,6 @@ def player_recycle_index(request):
     return TemplateResponse(request, "change_list.html", context=context)
 
 
-
 @login_required
 @permission_need([ADMIN, DATA_USER])
 def new_player(request):
@@ -220,7 +219,7 @@ def new_player(request):
 
         return TemplateResponse(request, "change.html", context=context)
     else:
-        PlayerManager.save(request.POST)
+        PlayerManager.save(request.user, request.POST)
         player_index_url = reverse('player_index')
         return HttpResponseRedirect(player_index_url)
 

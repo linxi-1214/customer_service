@@ -157,27 +157,30 @@ class PlayerExport(models.Model):
 
 
 class Player(models.Model):
-    account = models.CharField(null=False, unique=True, max_length=100)
-    username = models.CharField(null=True, max_length=100)
-    mobile = models.CharField(null=True, max_length=20)
-    qq = models.CharField(null=True, max_length=20)
-    come_from = models.CharField(null=True, max_length=100)
-    locked = models.BooleanField(default=False)
-    login_count = models.IntegerField(null=True)
-    game_count = models.IntegerField(null=True)
-    charge_count = models.IntegerField(null=True)
-    charge_money_total = models.FloatField(null=True)
-    imported_from = models.ForeignKey(PlayerImport, null=True, related_name="imported_from")
-    export_to = models.ForeignKey(PlayerExport, null=True, related_name="export_to")
-    current_contact_user = models.ForeignKey(User, null=True, related_name="contact_user")
-    locked_by_user = models.ForeignKey(User, null=True)
-    locked_time = models.DateTimeField(null=True)
-    timestamp = models.DateTimeField(null=True)
-    is_deleted = models.BooleanField(default=False, null=False)
+    account = models.CharField(null=False, unique=True, max_length=100, verbose_name=u'账号')
+    username = models.CharField(null=True, max_length=100, verbose_name=u'姓名')
+    mobile = models.CharField(null=True, max_length=20, verbose_name=u'手机')
+    qq = models.CharField(null=True, max_length=20, verbose_name=u'QQ')
+    come_from = models.CharField(null=True, max_length=100, verbose_name=u'所属渠道')
+    locked = models.BooleanField(default=False, verbose_name=u'是否锁定')
+    login_count = models.IntegerField(null=True, verbose_name=u'登录次数')
+    game_count = models.IntegerField(null=True, verbose_name=u'注册游戏数量')
+    charge_count = models.IntegerField(null=True, verbose_name=u'充值次数')
+    charge_money_total = models.FloatField(null=True, verbose_name=u'充值总额')
+    imported_from = models.ForeignKey(PlayerImport, null=True, related_name="imported_from", verbose_name=u'导入自')
+    export_to = models.ForeignKey(PlayerExport, null=True, related_name="export_to", verbose_name=u'导出到')
+    current_contact_user = models.ForeignKey(User, null=True, related_name="contact_user", verbose_name=u'当前查看客服')
+    locked_by_user = models.ForeignKey(User, null=True, verbose_name=u'锁定客服')
+    locked_time = models.DateTimeField(null=True, verbose_name=u'锁定时间')
+    timestamp = models.DateTimeField(null=True, verbose_name=u'时间戳')
+    is_deleted = models.BooleanField(default=False, null=False, verbose_name='是否删除')
 
     class Meta:
         verbose_name = verbose_name_plural = "玩家"
         db_table = "player"
+
+    def __str__(self):
+        return '%s %s' % (self.account, self.username)
 
 
 class ContractResult(models.Model):
@@ -275,11 +278,17 @@ class RoleBindMenu(models.Model):
         db_table = "role_bind_menu"
 
 
-#
-# class OperatorLog(models.Model):
-#     operator = models.ForeignKey(User, null=False)
-#     table_name = models.CharField(null=False, max_length=50)
-#     column_name = models.CharField()
+class OperatorLog(models.Model):
+    action_time = models.DateTimeField(null=False, auto_now=True)
+    object_id = models.IntegerField(null=True)
+    object_repr = models.CharField(max_length=200, null=True)
+    action_flag = models.SmallIntegerField(null=False)
+    change_message = models.TextField(null=False)
+    content_type_id = models.IntegerField(null=True)
+    user_id = models.IntegerField(null=False)
+
+    class Meta:
+        db_table = 'operator_log'
 
 
 
