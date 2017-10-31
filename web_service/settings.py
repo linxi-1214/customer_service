@@ -130,7 +130,7 @@ USE_TZ = False
 
 FILE_UPLOAD_TEMP_DIR = os.path.join(BASE_DIR, 'customer_service/tmp')
 
-FILE_UPLOAD_STORAGE_DIR = '/Users/wangxb/Work/upload'
+FILE_UPLOAD_STORAGE_DIR = '/Users/wangxb/Work/upload/'
 
 
 # Static files (CSS, JavaScript, Images)

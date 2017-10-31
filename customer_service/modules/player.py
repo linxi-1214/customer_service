@@ -895,8 +895,8 @@ class PlayerManager:
         else:
             player_info = Player.objects.get(id=player_id)
 
-            if not player_info:
-                return {}
+        if not player_info:
+            return {}
 
         # 如果用户的手机号不会空，那么将相同手机号的所有玩家都绑定
         # modify at 2017-10-30 15:29
