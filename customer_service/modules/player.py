@@ -833,6 +833,23 @@ class PlayerManager:
         return context
 
     @staticmethod
+    def _no_contact_player():
+        media = Media(
+            js=['common/selector2/js/select2.full.js', 'js/form.js', 'js/player.js', 'js/contact.js'],
+            css={'all': ['common/selector2/css/select2.min.css', 'css/player.css']}
+        )
+
+        context = {
+            'media': {
+                'js': media.render_js(),
+                'css': media.render_css()
+            },
+            'alert': {'class': 'alert-warning', 'content': u'<i class="fa fa-warning"></i> 暂无可联系客服，请等候管理员添加新的玩家！'}
+        }
+
+        return context
+
+    @staticmethod
     def contract_display(player_id, user):
         # 查询该客服今天是否查看过该玩家
         player_bind_info_qry_sql = """
@@ -887,6 +904,8 @@ class PlayerManager:
                     ORDER BY player.timestamp , player.id ASC
                     LIMIT 1
                 """.format(query_columns=query_columns)
+
+                print(player_select_sql)
                 with connection.cursor() as cursor:
                     cursor.execute(player_select_sql)
                     player_info = namedtuplefetchall(cursor)
@@ -896,7 +915,7 @@ class PlayerManager:
             player_info = Player.objects.get(id=player_id)
 
         if not player_info:
-            return {}
+            return PlayerManager._no_contact_player()
 
         # 如果用户的手机号不会空，那么将相同手机号的所有玩家都绑定
         # modify at 2017-10-30 15:29
