@@ -11,7 +11,9 @@
 <table id="{{ table.id }}" class="table table-striped" style="{{ table.style }}">
     <thead>
         <tr class="{{ table.header.class }}" style="{{ table.header.style }}">
+            {% if table.extensions.select %}
             <th></th>
+            {% endif %}
             <th style="display: none"></th>
             {% for col in table.headers %}
                 <th {% if col.class %}class="{{ col.class }}"{% endif %} {% if row.style %}style="{{ row.style }}"{% endif %}>{{ col.text }}</th>
@@ -22,7 +24,9 @@
         <tbody>
             {% for row in table.tbody %}
                 <tr class="{{ row.class }}" style="{{ row.style }}">
+                    {% if table.extensions.select %}
                     <td></td>
+                    {% endif %}
                     {% for col in row.columns %}
                         <td {% if col.class %}class="{{ col.class }}"{% endif %} {% if col.style %}style="{{ col.style }}"{% endif %}>
                             {{ col.text |safe }}
@@ -66,12 +70,14 @@
             })
             .DataTable({
                 columnDefs: [
+                    {% if table.extensions.select %}
                     {
                         targets: 0,
                         orderable: false,
                         className: 'select-checkbox',
                         width: "30px",
                     },
+                    {% endif %}
                     {
                         targets: -1,
                         orderable: false,
@@ -98,7 +104,7 @@
                 info: "当前显示<b>_START_</b>至<b>_END_</b>项  共 <b>_TOTAL_</b> 项",
                 lengthMenu: "每页显示 _MENU_ 项",
                 loadingRecords: "正在加载...",
-                search: '<div class="asr bld">_INPUT_<span class="bv bdb"></span></div>',
+                search: '<div class="asr bld">_INPUT_<span class="bv search bdb"></span></div>',
                 searchPlaceholder: "搜索...",
                 zeroRecords: "无匹配项",
                 paginate: {

@@ -390,12 +390,28 @@ def contract_player(request):
         current_player_id = request.GET.get('current', None)
 
         if current_player_id:
-            Player.objects.filter(id=current_player_id).update(current_contact_user=None)
+            current_player = Player.objects.get(id=current_player_id)
+            if current_player.mobile:
+                Player.objects.filter(mobile=current_player.mobile).update(current_contact_user=None)
+            else:
+                Player.objects.filter(id=current_player_id).update(current_contact_user=None)
 
     context = PlayerManager.contract_display(player_id, request.user)
     context.update(menus=menus)
 
     return TemplateResponse(request, "user_card.html", context=context)
+
+
+@login_required
+@permission_need([ADMIN, DATA_USER, CUSTOMER_SERVICE])
+@require_http_methods(["POST"])
+def ajax_contact_player(request):
+    player_id = request.POST.get('player_id')
+    player_set = PlayerManager.update_contact_result(request.user, player_id, request.POST)
+
+    player_account = [player.account for player in player_set]
+
+    return HttpResponse(json.dumps({'code': 0, 'message': u'玩家 %s 保存成功 !' % ','.join(player_account[:5])}))
 
 
 @login_required

@@ -103,7 +103,6 @@ class GameManager:
 
         return update_rows
 
-
     @staticmethod
     def delete(game_id):
         try:

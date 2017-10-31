@@ -163,8 +163,6 @@ class ServiceManager:
         elif settings.DATABASE_TYPE == "mysql":
             query_sql = query_sql.format(time_func_str="DATE_FORMAT(player_bind_info.contract_time, '%%Y-%%m-%%d')")
 
-        print(query_sql)
-
         process_order = ['looked', 'contacted', 'connected', 'success']
 
         ret_data = {}

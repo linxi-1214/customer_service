@@ -63,8 +63,8 @@
                 <div class="panel-heading"><i class="fa fa-star"> 使用提示</i></div>
                 <div class="panel-body">
                 1. 玩家的获取是根据导入顺序先后返回的<br>
-                2. 在联系玩家之后，修改相关信息，点击提交保存。如果你想以后继续联系该玩家，选择"锁定玩家"的复选框，之后在"玩家列表中"菜单可以看到。<br>
-                3. 点击"下一个"获取新的玩家信息。
+                2. 在联系玩家之后，修改相关信息，点击提交保存。该玩家将存放在"我的玩家"页面，可以继续联系。<br>
+                3. 点击"保存并查看下一个" 或 "下一个" 按钮来获取新的玩家信息。
             </div>
             </div>
         </div>
@@ -79,19 +79,20 @@
                           method="post" action="{% url 'contract_player' %}">
                         {% csrf_token %}
                         <input type="hidden" name="player_id" value="{{ player.id }}" />
+                        <input type="hidden" name="form_changed" value="0" />
                         <div class="form-group responsive-utilities-test hidden-on">
-                            <label class="col-sm-1 control-label">账&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;号</label>
+                            <label class="col-sm-1 control-label">账 号</label>
                             <div class="col-sm-3">
                                 <input type="text" class="form-control" value="{{ player.account }}" readonly/>
                             </div>
-                            <label for="inputUsername" class="col-sm-1 control-label">姓&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;名</label>
+                            <label for="inputUsername" class="col-sm-1 control-label">姓 名</label>
                             <div class="col-sm-3">
                                 <input type="text" class="form-control" name="username" id="inputUsername" placeholder="玩家姓名" {% if player.username %}value="{{ player.username }}"{% endif %} />
                             </div>
-                            <label class="col-sm-1 control-label">手&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;机</label>
+                            <label class="col-sm-1 control-label">手 机</label>
                             <div class="col-sm-3">
                                 <input type="text" class="form-control" name="mobile"
-                                       id="inputMobile" value="{{ player.mobile|default:'--' }}"/>
+                                       id="inputMobile" value="{{ player.mobile|default:'' }}"/>
                             </div>
                         </div>
                         <div class="form-group">
@@ -111,14 +112,32 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <label class="col-sm-1 control-label">锁定玩家</label>
-                            <div class="col-sm-1">
-                                <div class="checkbox">
-                                    <label>
-                                        <input name="locked" value="1" {% if player.locked %}checked{% endif %} type="checkbox"/>
-                                    </label>
-                                </div>
+                            <label class="col-sm-1 control-label">最近登录游戏</label>
+                            <div class="col-sm-3">
+                                 <select id="loginGame" name="last_login_game" class="form-control" kind="form-select">
+                                    <option></option>
+                                    {% for g in game_options %}
+                                        <option value="{{ g.value }}" {% if g.selected %}selected{% endif %}>{{ g.label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small id="game_help" class="form-text text-muted">如果没有您要选择的选项，请做备注，并通知管理员添加</small>
+{#                                <p class="form-control-static">#}
+{#                                    <span class="label label-info static-p">{{ login_info.game_name|default:'--' }}</span>#}
+{#                                </p>#}
                             </div>
+{#                            <div class="col-sm-1">#}
+{#                                <button type="button" class="btn btn-primary btn-circle">#}
+{#                                    <i class="fa fa-plus-circle"></i>#}
+{#                                </button>#}
+{#                            </div>#}
+{#                            <label class="col-sm-1 control-label">锁定玩家</label>#}
+{#                            <div class="col-sm-1">#}
+{#                                <div class="checkbox">#}
+{#                                    <label>#}
+{#                                        <input name="locked" value="1" {% if player.locked %}checked{% endif %} type="checkbox"/>#}
+{#                                    </label>#}
+{#                                </div>#}
+{#                            </div>#}
                         </div>
                         <div class="form-group">
                             <label class="col-sm-1 control-label">所属渠道</label>
@@ -139,12 +158,6 @@
                                     <span class="label label-info static-p">{{ player.charge_money_total|default:'0.0' }}元</span>
                                 </p>
                             </div>
-                            <label class="col-sm-1 control-label">最近登录游戏</label>
-                            <div class="col-sm-1">
-                                <p class="form-control-static">
-                                    <span class="label label-info static-p">{{ login_info.game_name|default:'--' }}</span>
-                                </p>
-                            </div>
                             <label class="col-sm-1 control-label">登录时间</label>
                             <div class="col-sm-1">
                                 <p class="form-control-static">
@@ -153,7 +166,7 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="inputNotes" class="col-sm-1 control-label">备&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;注</label>
+                            <label for="inputNotes" class="col-sm-1 control-label">备 注</label>
                             <div class="col-sm-11">
                                 <textarea class="form-control" rows="3" name="notes" id="inputNotes" placeholder="{{ note_info|safe }}"></textarea>
                             </div>
@@ -171,8 +184,11 @@
                         </div>
                         <div class="form-group">
                             <div class="col-lg-offset-1 col-sm-11">
-                                <button type="submit" class="btn btn-primary btn-sm btn-outline ">保&nbsp;&nbsp;&nbsp;&nbsp;存</button>
-                                <button type="submit" class="btn btn-success btn-sm btn-outline ">保存并查看下一个</button>
+                                <button type="button" onclick="save('{% url 'ajax_contact_player' %}');"
+                                        class="btn btn-primary btn-sm btn-outline ">保&nbsp;&nbsp;&nbsp;&nbsp;存</button>
+                                <button type="button"
+                                        onclick="save_and_next('{% url 'ajax_contact_player' %}', '{% url 'contract_player' %}?current={{ player.id }}')"
+                                        class="btn btn-success btn-sm btn-outline ">保存并查看下一个</button>
                                 <button type="button" class="btn btn-info btn-sm btn-outline pull-right"
                                         onclick="jump_to('{% url 'contract_player' %}?current={{ player.id }}');"
                                 >下一个</button>

@@ -59,6 +59,16 @@ a.contact {color: #3f903f}
 a:hover.contact {color: #4cae4c}
 
 
+div.top-alert {
+    position: fixed;
+    top: -100px;
+    z-index: 10000;
+    padding: 10px 35px 10px 8px;
+    border-radius: 1px;
+    margin-top: 0;
+}
+
+
 /*.form-control {*/
     /*color: #fff;*/
     /*background-color: #2E68AA;*/

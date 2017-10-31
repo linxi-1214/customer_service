@@ -18,11 +18,28 @@
     <script src="{% static 'vendor/bootstrap/js/bootstrap.min.js' %}"></script>
     {% block extra_js  %}
     {% endblock %}
+    <script>
+        function hide_top_tip() {
+            var div = $("div.top-alert");
+            $("div.top-alert").animate({'top': '-' + (div.height() + 24) + 'px'});
+        }
+    </script>
 
 </head>
 
 <body>
     <div id="wrapper">
+        <!-- action tip alert begin -->
+{#        <div class="alert alert-success top-alert col-md-6 col-lg-offset-3" role="alert">#}
+{#            <strong>Well done!</strong> You successfully read this important alert message.#}
+{#        </div>#}
+        <div class="alert top-alert alert-dismissible show col-md-6 col-lg-offset-3" role="alert">
+            <button type="button" class="close" onclick="hide_top_tip()" aria-label="Close">
+                <span aria-hidden="true">×</span>
+            </button>
+            <p id="top-alert-content"></p>
+        </div>
+        <!-- action tip alert end -->
         <!-- Navigation -->
         <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
             <div class="navbar-header">

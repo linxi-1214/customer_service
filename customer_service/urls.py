@@ -23,6 +23,7 @@ urlpatterns = [
     url(r'player/recycle-action/$', views.recycle_player, name='recycle_player'),
     url(r'player/import/$', views.import_player, name='import_player'),
     url(r'player/export/$', views.export_player, name='export_player'),
+    url(r'player/ajax/update-contact/$', views.ajax_contact_player, name='ajax_contact_player'),
     url(r'player/contract/$', views.contract_player, name='contract_player'),
     url(r'player/import-result/([0-9]+)/$', views.import_detail, name='import_detail'),
     url(r'player/contact-record/$', views.player_contact_detail, name='player_contact_detail'),

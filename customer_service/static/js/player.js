@@ -102,6 +102,8 @@ function player_query() {
     var account = $("#_account").val();
     var game = $("#_game_name option:selected").text();
     var mobile = $("#_mobile").val();
+    var result = $("#_result option:selected").text();
+    var service = $("#_user option:selected").text();
 
     $('#_player-table').DataTable().column( 2 ).search(
         account, true, true
@@ -111,6 +113,12 @@ function player_query() {
     ).draw();
     $('#_player-table').DataTable().column( 4 ).search(
         mobile, true, true
+    ).draw();
+    $('#_player-table').DataTable().column( 8 ).search(
+        service, true, true
+    ).draw();
+    $('#_player-table').DataTable().column( 17 ).search(
+        result, true, true
     ).draw();
 
     $('#_player-table').DataTable().draw();
@@ -205,10 +213,10 @@ $(function () {
 
     try {
         $("select[kind=form-select]").select2({
-            placeholder: {
-                id: 0,
-                text: '-- 请选择 --'
-            },
+            // placeholder: {
+            //     id: 0,
+            //     text: '-- 请选择' + this.name + ' --'
+            // },
             allowClear: true,
             containerCss: {height: '34px'}
         });
@@ -227,7 +235,7 @@ $(function () {
             function( settings, data, dataIndex ) {
                 var min = parseInt( $('#_charge_money_min').val(), 10 );
                 var max = parseInt( $('#_charge_money_max').val(), 10 );
-                var money = parseFloat( data[12] ) || 0; // use data for the age column
+                var money = parseFloat( data[13] ) || 0; // use data for the age column
 
                 if ( ( isNaN( min ) && isNaN( max ) ) ||
                      ( isNaN( min ) && money <= max ) ||

@@ -10,6 +10,7 @@ import xlrd, xlsxwriter
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
+from django.db.models import Q
 
 from django.forms.widgets import Media
 from django.db import connection
@@ -20,7 +21,7 @@ from customer_service.tools.model import updated_fields, set_operator
 
 from customer_service.models import (
     Game, Player, RegisterInfo, PlayerImport, PlayerExport, AccountLog,
-    PlayerLoginInfo, ContractResult, PlayerBindInfo
+    PlayerLoginInfo, ContractResult, PlayerBindInfo, User
 )
 
 logger = logging.getLogger(__name__)
@@ -66,7 +67,7 @@ class PlayerManager:
         return bind_user_str
 
     @staticmethod
-    def _generate_top_form():
+    def _generate_top_form(user):
         """
         返回玩家列表的查询表单
         :return:
@@ -75,6 +76,11 @@ class PlayerManager:
         game_objs = Game.objects.all()
         result_objs = ContractResult.objects.all()
 
+        if user.role_id == settings.ADMIN_ROLE:
+            user_objs = User.objects.all()
+            user_obj_dict = [
+                {'label': _user.loginname, "value": _user.id} for _user in user_objs
+            ]
         game_obj_dict = [
             {'label': _game_obj.name, "value": _game_obj.id} for _game_obj in game_objs
         ]
@@ -91,6 +97,7 @@ class PlayerManager:
                     "type": "text",
                     "before": "game",
                     "name": "account",
+                    "placeholder": u'玩家账号',
                     "id": "_account",
                     "attrs": {"style": "width: 150px; margin-right: 10px"}
                 },
@@ -98,12 +105,14 @@ class PlayerManager:
                     "type": "text",
                     "before": "mobile",
                     "name": "mobile",
+                    "placeholder": u'手机号',
                     "id": "_mobile",
                     "attrs": {'style': "margin-right: 10px"}
                 },
                 {
                     "type": "text",
                     "name": "charge_money_min",
+                    "placeholder": u'总额小',
                     "id": "_charge_money_min",
                     "before": "money",
                     "attrs": {
@@ -114,6 +123,7 @@ class PlayerManager:
                     "type": "text",
                     "label": u"-",
                     "name": "charge_money_max",
+                    "placeholder": u'总额大',
                     "id": "_charge_money_max",
                     "before": "money",
                     "attrs": {
@@ -125,14 +135,20 @@ class PlayerManager:
                     "name": "game_name",
                     "id": "_game_name",
                     "options": game_obj_dict,
-                    "attrs": {'style': "margin-right: 20px; min-width: 120px;"}
+                    "attrs": {
+                        'style': "margin-right: 20px; min-width: 120px;",
+                        'data-placeholder': u'游戏'
+                    }
                 },
                 {
                     "type": "select",
                     "name": "result",
                     "id": "_result",
                     "options": result_obj_dict,
-                    "attrs": {'style': "margin-right: 20px; min-width: 120px;"}
+                    "attrs": {
+                        'style': "margin-right: 20px; min-width: 120px;",
+                        'data-placeholder': u'联系结果'
+                    }
                 },
                 {
                     "type": "button",
@@ -151,6 +167,14 @@ class PlayerManager:
                 }
             ]
         }
+        if user.role_id == settings.ADMIN_ROLE:
+            top_form['fields'].insert(2, {
+                "type": "select",
+                "name": "user",
+                "id": "_user",
+                "options": user_obj_dict,
+                "attrs": {'style': "min-width: 150px;", 'data-placeholder': u'所属客服'}
+            })
         return top_form
 
     @staticmethod
@@ -190,6 +214,12 @@ class PlayerManager:
                 ]
             else:
                 return [
+                    {
+                        'icon': 'fa-phone-square',
+                        'tooltip': u'联系该玩家',
+                        'theme': ' contact ',
+                        'href': "%s?player=%d" % (reverse('contract_player'), player_obj.id)
+                    },
                     {
                         'icon': 'fa-edit',
                         'tooltip': u'编辑',
@@ -431,17 +461,18 @@ class PlayerManager:
             'add_url_label': u'登记玩家信息',
             'table': {
                 'id': '_player-table',
+                'extensions': {'select': True},
                 'buttons': table_buttons,
                 'headers': [
                     {'text': u'账号'}, {'text': u'姓名'}, {'text': u'手机号'},
                     {'text': u'QQ号码'}, {'text': u'注册游戏'}, {'text': u'注册时间'},
                     {'text': u'所属客服'}, {'text': u'渠道'}, {'text': u'最近登录游戏'}, {'text': u'登录时间'},
                     {'text': u'充值次数'}, {'text': u'充值总额'},
-                    {'text': u'最近充值游戏'}, {'text': u'最近充值金额'}, {'text': u'最近充值时间'}, {'text': u'备注'},
+                    {'text': u'最近充值游戏'}, {'text': u'最近充值金额'}, {'text': u'最近充值时间'}, {'text': u'联系结果'},
                     {'text': u'操作'}
                 ],
                 'tbody': tbody,
-                'top_form': PlayerManager._generate_top_form()
+                'top_form': PlayerManager._generate_top_form(user)
             },
             'modal': {
                 "id": "_player_delete_modal"
@@ -803,7 +834,7 @@ class PlayerManager:
 
     @staticmethod
     def contract_display(player_id, user):
-        # 查询该客服目前有没有查看过该玩家
+        # 查询该客服今天是否查看过该玩家
         player_bind_info_qry_sql = """
             SELECT
                 count(*) AS counter
@@ -822,79 +853,65 @@ class PlayerManager:
             player_bind_info_qry_sql = player_bind_info_qry_sql.format(
                 time_func_str="DATE_FORMAT(contract_time, '%%Y-%%m-%%d')"
             )
+
+        query_columns = """
+            player.id,
+            player.account,
+            player.username,
+            player.mobile,
+            player.qq,
+            player.locked,
+            player.come_from,
+            player.charge_count,
+            player.charge_money_total,
+            player.locked_by_user_id
+        """
+
         if player_id is None:
-            refresh_player_sql = """
-                SELECT
-                    player.id,
-                    player.account,
-                    player.username,
-                    player.mobile,
-                    player.qq,
-                    player.locked,
-                    player.come_from,
-                    player.charge_count,
-                    player.charge_money_total,
-                    player.locked_by_user_id
-                FROM player
-                WHERE player.current_contact_user_id = %s
-            """
-
-            player_select_sql = """
-                SELECT
-                    player.id,
-                    player.account,
-                    player.username,
-                    player.mobile,
-                    player.qq,
-                    player.locked,
-                    player.locked_by_user_id
-                FROM
-                    player
-                        LEFT JOIN
-                    (SELECT
-                        player_id
+            player_info = Player.objects.filter(current_contact_user=user).first()
+            if not player_info:
+                player_select_sql = """
+                    SELECT
+                        {query_columns}
                     FROM
-                        player_bind_info
+                        player
+                            LEFT JOIN
+                        (
+                            SELECT player_id FROM player_bind_info WHERE is_bound = 1 AND in_effect = 1
+                        ) AS player_bind_info ON player.id != player_bind_info.player_id
                     WHERE
-                        is_bound = 1 AND in_effect = 1) AS player_bind_info ON player.id != player_bind_info.player_id
-                WHERE
-                    player.locked = 0
-                        AND player.locked_by_user_id IS NULL
-                        AND player.is_deleted = 0
-                        AND current_contact_user_id IS NULL
-                ORDER BY player.timestamp , player.id ASC
-                LIMIT 1
-            """
-        else:
-            player_select_sql = """
-                SELECT
-                    player.id,
-                    player.account,
-                    player.username,
-                    player.mobile,
-                    player.qq,
-                    player.locked,
-                    player.locked_by_user_id
-                FROM player
-                WHERE id = %s
-            """
-
-        with connection.cursor() as cursor:
-            if player_id is None:
-                cursor.execute(refresh_player_sql, (user.id, ))
-                player_info = namedtuplefetchall(cursor)
-                if len(player_info) == 0:
+                        player.locked = 0
+                            AND player.locked_by_user_id IS NULL
+                            AND player.is_deleted = 0
+                            AND current_contact_user_id IS NULL
+                    ORDER BY player.timestamp , player.id ASC
+                    LIMIT 1
+                """.format(query_columns=query_columns)
+                with connection.cursor() as cursor:
                     cursor.execute(player_select_sql)
                     player_info = namedtuplefetchall(cursor)
-            else:
-                cursor.execute(player_select_sql, (player_id, ))
-                player_info = namedtuplefetchall(cursor)
+                    player_info = None if len(player_info) == 0 else player_info[0]
 
-            if len(player_info) == 0:
+        else:
+            player_info = Player.objects.get(id=player_id)
+
+            if not player_info:
                 return {}
 
-            player_info = player_info[0]
+        # 如果用户的手机号不会空，那么将相同手机号的所有玩家都绑定
+        # modify at 2017-10-30 15:29
+        if player_info.mobile:
+            Player.objects.filter(mobile=player_info.mobile).update(
+                current_contact_user=user, timestamp=datetime.now()
+            )
+            player_set = Player.objects.filter(mobile=player_info.mobile)
+        else:
+            Player.objects.filter(id=player_info.id).update(current_contact_user=user, timestamp=datetime.now())
+            player_set = [player_info]
 
+        player_id_place_holder = ", ".join(['%s'] * len(player_set))
+
+        with connection.cursor() as cursor:
             cursor.execute(player_bind_info_qry_sql,
                            (
                                user.id, player_info.id, settings.PROCESS['looked'],
@@ -902,23 +919,22 @@ class PlayerManager:
                            ))
             bind_info = namedtuplefetchall(cursor)[0]
 
-            if bind_info.counter == 0:
-                try:
-                    looked_object = ContractResult.objects.filter(process=settings.PROCESS['looked']).first()
-                    PlayerBindInfo.objects.create(
-                        user=user, player_id=player_info.id,
-                        is_bound=False, contract_time=datetime.now(),
-                        contract_result=looked_object, in_effect=True
-                    )
-                except ObjectDoesNotExist:
-                    pass
+        if bind_info.counter == 0:
+            looked_object = ContractResult.objects.filter(process=settings.PROCESS['looked']).first()
+            if looked_object:
+                player_bind_info = PlayerBindInfo(
+                    user=user, player_id=player_info.id,
+                    is_bound=False, contract_time=datetime.now(),
+                    contract_result=looked_object, in_effect=True
+                )
+                set_operator(player_bind_info, user)
+                player_bind_info.save()
 
         # 查询玩家当前的标记信息
 
         contact_result = ContractResult.objects.all()
         last_contact_result_sql = """
-            SELECT
-                *
+            SELECT *
             FROM player_bind_info
             WHERE contract_result_id IN (SELECT id FROM contract_result WHERE process > %s) AND player_id=%s
             ORDER BY id DESC LIMIT 1
@@ -934,23 +950,37 @@ class PlayerManager:
         # 标记信息查询完毕
 
         # 查询最近的登录信息
+        # 由于要求客服能够修改玩家的最近登录游戏，但是不一定有登录时间，所以不能再按照时间排序，要取 id 值最大的
+        # comment at 2017-10-30
+        # login_info_sql = """
+        #     SELECT
+        #         login_info.player_id,
+        #         login_info.login_time,
+        #         game.name AS game_name,
+        #         game.id AS game_id
+        #     FROM
+        #         player_login_info AS login_info
+        #         INNER JOIN game ON login_info.game_id = game.id
+        #     WHERE login_info.id = (
+        #         SELECT
+        #             login_a.id
+        #         FROM player_login_info AS login_a WHERE login_a.id = (
+        #             SELECT login_b.id FROM player_login_info AS login_b
+        #             WHERE login_a.player_id = login_b.player_id AND login_b.player_id = %s
+        #             ORDER BY login_b.login_time ASC LIMIT 1
+        #         )
+        #     )
+        # """
         login_info_sql = """
             SELECT
                 login_info.player_id,
                 login_info.login_time,
-                game.name AS game_name
+                game.name AS game_name,
+                game.id AS game_id
             FROM
                 player_login_info AS login_info
                 INNER JOIN game ON login_info.game_id = game.id
-            WHERE login_info.id = (
-                SELECT
-                    login_a.id
-                FROM player_login_info AS login_a WHERE login_a.id = (
-                    SELECT login_b.id FROM player_login_info AS login_b
-                    WHERE login_a.player_id = login_b.player_id AND login_b.player_id = %s
-                    ORDER BY login_b.login_time ASC LIMIT 1
-                )
-            )
+            WHERE login_info.id = (SELECT MAX(id) FROM player_login_info WHERE player_id=%s)
         """
 
         with connection.cursor() as cursor:
@@ -959,56 +989,62 @@ class PlayerManager:
             if len(login_info) > 0:
                 login_info_obj = login_info[0]
                 login_info = {
-                    "login_time": login_info_obj.login_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    "game_name": login_info_obj.game_name
+                    "login_time": login_info_obj.login_time.strftime('%Y-%m-%d %H:%M:%S')
+                    if login_info_obj.login_time else None,
+                    "game_name": login_info_obj.game_name,
+                    "game_id": login_info_obj.game_id
                 }
             else:
-                login_info = {"login_time": None, "game_name": None}
+                login_info = {"login_time": None, "game_name": None, "game_id": 0}
         # 查询最近登录的信息完毕
+
+        # 查询所有游戏
+        game_set = Game.objects.all()
+
+        game_options = [
+            {
+                "label": _game.name, "value": _game.id, "selected": _game.id == login_info['game_id']
+            } for _game in game_set
+        ]
 
         # 查询玩家的注册游戏信息，最近的充值信息
 
         account_sql = """
             SELECT
-                game.name AS game_name,
-                register_info.register_time,
-                account.money,
-                account.charge_time
+                game.name AS game_name, register_info.register_time,
+                account.money, account.charge_time,
+                player.account
             FROM
-                register_info
+                player
+                    LEFT JOIN
+                register_info ON player.id = register_info.player_id
                     LEFT JOIN
                 game ON register_info.game_id = game.id
                     LEFT JOIN
                 (
-                SELECT
-                    tab_a.player_id,
-                    tab_a.game_id,
-                    tab_a.money,
-                    tab_a.charge_time
-                FROM account_log AS tab_a
-                WHERE id = (
-                            SELECT max(id)
-                            FROM account_log AS tab_b
-                            WHERE tab_b.player_id = tab_a.player_id AND tab_b.game_id = tab_a.game_id
-                            )
-                ) AS account ON account.player_id = register_info.player_id
-                                    AND account.game_id = register_info.game_id
+                    SELECT
+                        player_id, game_id, money, charge_time
+                    FROM account_log
+                    WHERE id IN ( SELECT MAX(id) FROM account_log GROUP BY player_id, game_id )
+                ) AS account ON account.player_id = register_info.player_id AND account.game_id = register_info.game_id
 
-            WHERE register_info.player_id = %s
-        """
+            WHERE player.id IN ({place_holder})
+        """.format(place_holder=player_id_place_holder)
+
+        player_id_list = [_p.id for _p in player_set]
 
         with connection.cursor() as cursor:
-            cursor.execute(account_sql, (player_info.id, ))
+            cursor.execute(account_sql, player_id_list)
             account_info = namedtuplefetchall(cursor)
 
         # 查询玩家的备注信息
-        note_info_set = PlayerBindInfo.objects.filter(player_id=player_info.id).order_by('-contract_time')
+        note_info_set = PlayerBindInfo.objects.filter(Q(player_id=player_info.id),
+                                                      Q(note__isnull=False), ~Q(note='')
+                                                      ).order_by('-contract_time')
         note_info = [
             "% 2d. [时间：%s] 备注：%s" % (
-                ind,
-                _note.contract_time.strftime('%Y-%m-%d %H:%M:%S'),
-                _note.note
-            ) for ind, _note in enumerate(note_info_set, start=1) if _note.note is not None and _note.note != ""
+                ind, _note.contract_time.strftime('%Y-%m-%d %H:%M:%S'), _note.note
+            ) for ind, _note in enumerate(note_info_set, start=1)
         ]
 
         status_info = [
@@ -1021,7 +1057,7 @@ class PlayerManager:
         ]
 
         media = Media(
-            js=['common/selector2/js/select2.full.js', 'js/player.js'],
+            js=['common/selector2/js/select2.full.js', 'js/form.js', 'js/player.js', 'js/contact.js'],
             css={'all': ['common/selector2/css/select2.min.css', 'css/player.css']}
         )
 
@@ -1029,17 +1065,18 @@ class PlayerManager:
             {
                 'columns': [
                     {'text': 1, 'style': 'display: none;'},
-                    {'text': account_log.game_name},
-                    {'text': account_log.register_time.strftime('%Y-%m-%d %H:%M:%S')\
+                    {'text': account_log.account},
+                    {'text': account_log.game_name or '--'},
+                    {'text': account_log.register_time.strftime('%Y-%m-%d %H:%M:%S')
                         if account_log.register_time else '--'},
                     {'text': account_log.money or 0},
-                    {'text': account_log.charge_time.strftime('%Y-%m-%d %H:%M:%S')\
+                    {'text': account_log.charge_time.strftime('%Y-%m-%d %H:%M:%S')
                         if account_log.charge_time else '--'
                      },
                 ],
 
             } for account_log in account_info
-            ]
+        ]
 
         context = {
             'breadcrumb_items': [
@@ -1052,6 +1089,7 @@ class PlayerManager:
             'status': status_info,
             'player': player_info,
             'login_info': login_info,
+            'game_options': game_options,
             'note_info': "<br>".join(note_info),
             'media': {
                 'js': media.render_js(),
@@ -1060,14 +1098,12 @@ class PlayerManager:
             'table': {
                 'id': '_player-table',
                 'headers': [
-                    {'text': u'游戏'}, {'text': u'注册时间'}, {'text': u'最近充值金额（元）'},
+                    {'text': u'玩家账号'}, {'text': u'注册游戏'}, {'text': u'注册时间'}, {'text': u'最近充值金额（元）'},
                     {'text': u'充值时间'}
                 ],
                 'tbody': tbody,
             }
         }
-
-        Player.objects.filter(id=player_info.id).update(current_contact_user=user, timestamp=datetime.now())
 
         return context
 
@@ -1075,57 +1111,60 @@ class PlayerManager:
     def update_contact_result(user, player_id, params):
         try:
             player_obj = Player.objects.get(id=player_id)
+
+            if player_obj.mobile:
+                player_set = Player.objects.filter(mobile=player_obj.mobile)
+            else:
+                player_set = [player_obj]
         except ObjectDoesNotExist:
             return None
 
-        username = params.get('username')
-        qq = params.get('qq')
         status = params.get('status')
-        locked_param = params.get('locked', 0)
+        # locked_param = params.get('locked', 0)
+        # locked = locked_param == '1'
+        last_login_game = params.get('last_login_game')
         notes = params.get('notes')
+        form_changed = params.get('form_changed') == '1'
 
-        locked = locked_param == '1'
+        update_fields = updated_fields(player_obj, params, ['username', 'qq', 'mobile'])
 
-        update_fields = updated_fields(player_obj, params, ['username', 'qq', 'locked'])
-        set_operator(player_obj, user)
-
-        if player_obj.username != username.strip():
-            player_obj.username = username.strip()
-
-        if player_obj.qq != qq.strip():
-            player_obj.qq = qq.strip()
-
-        if player_obj.locked != locked:
-            player_obj.locked = locked
-            player_obj.locked_by_user = user if locked else None
-            player_obj.locked_time = datetime.now() if locked else None
-
+        current_time = datetime.now()
+        status_obj = None
         if status:
             try:
                 status_obj = ContractResult.objects.get(id=status)
             except ObjectDoesNotExist:
-                return None
+                pass
 
-            if status_obj.bind:
-                player_obj.locked_by_user = user
-                player_obj.locked = True
-                player_obj.locked_time = datetime.now()
+        for player in player_set:
+            tmp_update_fields = update_fields
+            for changed_field in update_fields:
+                setattr(player, changed_field, params.get(changed_field))
+            set_operator(player, user)
 
-            bind_info = PlayerBindInfo(
-                user=user,
-                player=player_obj,
-                is_bound=status_obj.bind,
-                contract_time=datetime.now(),
-                contract_result=status_obj,
-                in_effect=True,
-                note=notes
-            )
-            set_operator(bind_info, user)
-            bind_info.save()
+            if form_changed and not player.locked:
+                tmp_update_fields.extend(['locked', 'locked_by_user_id', 'locked_time'])
+                player.locked = True
+                player.locked_by_user = user
+                player.locked_time = current_time.strftime('%Y-%m-%d %H:%M:%S')
 
-        player_obj.save(update_fields=update_fields)
+            if last_login_game:
+                PlayerLoginInfo.objects.create(
+                    player_id=player.id, game_id=last_login_game
+                )
 
-        return player_obj
+            if status_obj:
+                bind_info = PlayerBindInfo(
+                    user=user, player=player, is_bound=status_obj.bind,
+                    contract_time=datetime.now(), contract_result=status_obj,
+                    in_effect=True, note=notes
+                )
+                set_operator(bind_info, user)
+                bind_info.save()
+
+            player.save(update_fields=tmp_update_fields)
+
+        return player_set
 
     @staticmethod
     def update(player_id, params):
