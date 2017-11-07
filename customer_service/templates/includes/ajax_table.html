@@ -20,27 +20,6 @@
             {% endfor %}
         </tr>
     </thead>
-    {% if table.tbody %}
-        <tbody>
-            {% for row in table.tbody %}
-                <tr class="{{ row.class }}" style="{{ row.style }}">
-                    {% if table.extensions.select %}
-                    <td></td>
-                    {% endif %}
-                    {% for col in row.columns %}
-                        <td {% if col.class %}class="{{ col.class }}"{% endif %} {% if col.style %}style="{{ col.style }}"{% endif %}>
-                            {{ col.text |safe }}
-                        </td>
-                    {% endfor %}
-                    {% if row.actions %}
-                    <td style="width: 100px;">
-                        {% include "table_action.html" with actions=row.actions %}
-                    </td>
-                    {% endif %}
-                </tr>
-            {% endfor %}
-        </tbody>
-    {% endif %}
 </table>
 {% if table.paginate %}
     <div class="row">
@@ -60,9 +39,9 @@
 
 <script language="javascript">
     $(function () {
-        var table = $('.table')
-            .on('init.dt', function () {
-                $("label > select").select2({
+       $("#{{ table.id }}")
+           .on('init.dt', function () {
+               $("label > select").select2({
                     placeholder: {
                         id: 0,
                         text: '-- 请选择 --'
@@ -98,46 +77,54 @@
 {#                        }#}
                     });
                 {% endif %}
-            })
-            .DataTable({
-                columnDefs: [
-                    {% if table.extensions.select %}
-                    {
-                        targets: 0,
-                        orderable: false,
-                        className: 'select-checkbox',
-                        width: "30px",
-                        searchable: false
-                    },
-                    {% endif %}
-                    {% if table.order_columns %}
-                    {
-                        targets: '_all',
-                        orderable: false,
-                    },
-                        {
-                            targets: {{ table.order_columns }},
-                            orderable: true
-                        }
-                    {% endif %}
+               $('.tooltip-demo').tooltip({
+                    selector: "[data-toggle=tooltip]",
+                    container: "body"
+               });
 
-                ],
+           })
+           .on('draw.dt', function() {
+               {% for init_func in table.on_init %}
+                   {{ init_func|safe }}
+               {% endfor %}
+               $('.tooltip-demo').tooltip({
+                   selector: "[data-toggle=tooltip]",
+                   container: "body"
+               });
+           })
+           .DataTable(
+           {
+               columnDefs: [
+                   {% if table.extensions.select %}
+                   {
+                       targets: 0,
+                       orderable: false,
+                       className: 'select-checkbox',
+                       width: "30px",
+                       searchable: false,
+                       data: null,
+                       defaultContent: ''
+                   },
+                   {% endif %}
+                   {% if table.columns %}
+                       {% for column in table.columns %}
+                           {targets: {{ column.serial }}, data: '{{ column.name }}',
+                           {% if column.render %}render: {{ column.render|safe }},{% endif %}
+                           {% if column.attrs %}
+                               {% for key, val in column.attrs.items %}
+                                   {{ key }}: {{ val|safe }},
+                               {% endfor %}
+                           {% endif %}
+                           },
+                       {% endfor %}
+                   {% endif %}
+               ],
                 select: {
                     style:    'multi',
                     selector: 'td:first-child'
-                },
-                {% if table.paginate %}
-                dom: 'lft',
-                {% endif %}
-                lengthMenu: [[10, 15, 20, 25, 30, 40, 50, -1], [10, 15, 20, 25, 30, 40, 50, "All"]],
-                autoWidth: false,
-                paging: true,
-                fixedColumns: {
-                    heightMatch: 'auto',
-                    leftColumns: 2,
-                    rightColumns: 1
-                },
-                language: {
+                   },
+               lengthMenu: [[10, 15, 20, 25, 30, 40, 50, -1], [10, 15, 20, 25, 30, 40, 50, "All"]],
+               language: {
                     emptyTable: "暂无数据",
                     info: "当前显示<b>_START_</b>至<b>_END_</b>项  共 <b>_TOTAL_</b> 项",
                     lengthMenu: "每页显示 _MENU_ 项",
@@ -149,18 +136,9 @@
                         "next": "下一页",
                         "previous": "上一页"
                     }
-                }
-        });
-
-         $('.table').on('order.dt', function() {
-            var order = table.order();
-            var col = table.column(order[0][0]);
-            var title = col.header();
-        });
-
-        $('.tooltip-demo').tooltip({
-            selector: "[data-toggle=tooltip]",
-            container: "body"
-        });
+               },
+               ajax: "{{ table.ajax }}"
+           }
+       );
     });
 </script>

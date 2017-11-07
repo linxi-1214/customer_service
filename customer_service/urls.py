@@ -15,11 +15,13 @@ urlpatterns = [
 
     # Player View Begin
     url(r'player/index/$', views.player_index, name='player_index'),
+    url(r'player/ajax-index/$', views.ajax_player_index, name='ajax_player_index'),
     url(r'player/add/$', views.new_player, name='add_player'),
     url(r'player/edit/([0-9]+)/$', views.edit_player, name='edit_player'),
     url(r'player/delete/$', views.delete_player, name='delete_player'),
     url(r'player/delete-multi/$', views.delete_player_multiple, name='delete_player_multi'),
     url(r'player/recycle/index/$', views.player_recycle_index, name='player_recycle_index'),
+    url(r'player/recycle/ajax-index/$', views.ajax_player_recycle_index, name='ajax_player_recycle_index'),
     url(r'player/recycle-action/$', views.recycle_player, name='recycle_player'),
     url(r'player/import/$', views.import_player, name='import_player'),
     url(r'player/export/$', views.export_player, name='export_player'),
@@ -34,7 +36,15 @@ urlpatterns = [
     url(r'game/add/$', views.new_game, name='add_game'),
     url(r'game/delete/$', views.delete_game, name='delete_game'),
     url(r'game/edit/([0-9]+)/$', views.edit_game, name='edit_game'),
-    # Game view end 
+    # Game view end
+
+    # ALERT VIEW BEGIN
+    url(r'alert/index/$', views.alert_index, name='alert_index'),
+    url(r'alert/all/$', views.alert_all, name='alert_all'),
+    url(r'alert/ajax-all/$', views.ajax_alert_all, name='ajax_alert_all'),
+    url(r'alert/has-seen/([0-9]+)/$', views.red_alert, name='red_alert'),
+    url(r'alert/has-seen-multi/$', views.red_alert_multi, name='red_alert_multi'),
+    # ALERT VIEW END
     
     # Menu view begin
     url(r'menu/index/$', views.menu_index, name='menu_index'),

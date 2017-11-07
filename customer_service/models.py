@@ -162,16 +162,27 @@ class Player(models.Model):
     mobile = models.CharField(null=True, max_length=20, verbose_name=u'手机')
     qq = models.CharField(null=True, max_length=20, verbose_name=u'QQ')
     come_from = models.CharField(null=True, max_length=100, verbose_name=u'所属渠道')
-    locked = models.BooleanField(default=False, verbose_name=u'是否锁定')
     login_count = models.IntegerField(null=True, verbose_name=u'登录次数')
+
     game_count = models.IntegerField(null=True, verbose_name=u'注册游戏数量')
+    register_from_game = models.ForeignKey(Game, null=True, verbose_name=u'账号注册游戏')
+    register_from_game_time = models.DateTimeField(null=True, verbose_name=u'账号注册时间')
+
     charge_count = models.IntegerField(null=True, verbose_name=u'充值次数')
     charge_money_total = models.FloatField(null=True, verbose_name=u'充值总额')
-    imported_from = models.ForeignKey(PlayerImport, null=True, related_name="imported_from", verbose_name=u'导入自')
-    export_to = models.ForeignKey(PlayerExport, null=True, related_name="export_to", verbose_name=u'导出到')
+
+    last_login_info_id = models.IntegerField(null=True, verbose_name=u'最近登录信息ID')
+    last_account_log_id = models.IntegerField(null=True, verbose_name=u'最近的充值记录ID')
+    last_contact_id = models.IntegerField(null=True, verbose_name=u'最近的联系记录ID')
+
+    imported_from = models.IntegerField(null=True, verbose_name=u'导入自')
+    export_to = models.IntegerField(null=True, verbose_name=u'导出到')
+
     current_contact_user = models.ForeignKey(User, null=True, related_name="contact_user", verbose_name=u'当前查看客服')
+    locked = models.BooleanField(default=False, verbose_name=u'是否锁定')
     locked_by_user = models.ForeignKey(User, null=True, verbose_name=u'锁定客服')
     locked_time = models.DateTimeField(null=True, verbose_name=u'锁定时间')
+
     timestamp = models.DateTimeField(null=True, verbose_name=u'时间戳')
     is_deleted = models.BooleanField(default=False, null=False, verbose_name='是否删除')
 
@@ -229,7 +240,7 @@ class PlayerLoginInfo(models.Model):
 
 class AccountLog(models.Model):
     player = models.ForeignKey(Player, null=False)
-    game = models.ForeignKey(Game, null=False)
+    game = models.ForeignKey(Game, null=True)
     recorder = models.ForeignKey(User, null=False)      # 充值记录员
     money = models.FloatField(default=0)
     charge_time = models.DateTimeField(null=True)
@@ -243,8 +254,10 @@ class AccountLog(models.Model):
 class Alert(models.Model):
     sender = models.ForeignKey(User, null=False, related_name='alert_sender')
     receiver = models.ForeignKey(User, null=False, related_name='alert_receiver')
-    alert_time = models.DateTimeField(null=False)
+    alert_time = models.DateTimeField(null=True)
+    timing = models.BooleanField(default=False, null=False, verbose_name=u"是否是定时通知")    # true， 定时， false， 实时
     content = models.TextField()
+    href = models.CharField(max_length=200, null=True)
     marked = models.BooleanField(default=False)
     create_time = models.DateTimeField(null=True, auto_now=True)
     update_time = models.DateTimeField(null=True, auto_now=True)

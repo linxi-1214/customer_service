@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth import authenticate, login, logout
+from django.core.exceptions import ObjectDoesNotExist
 
 from django import http
 from django.template import Context, Engine, TemplateDoesNotExist, loader
@@ -18,7 +19,8 @@ from webargs import fields
 from webargs.djangoparser import use_kwargs, use_args
 
 from customer_service.modules import *
-from customer_service.models import Player
+from customer_service.models import Player, Alert
+from customer_service.tools.model import updated_fields, set_operator
 
 from web_service import settings
 from customer_service.decorator import permission_need, ADMIN, DATA_USER, CUSTOMER_SERVICE
@@ -199,6 +201,14 @@ def player_index(request):
 
 
 @login_required
+@permission_need([ADMIN, DATA_USER, CUSTOMER_SERVICE])
+def ajax_player_index(request):
+    player_info = PlayerManager.player_condition_query(request.user)
+
+    return HttpResponse(json.dumps({'data': player_info}), content_type='application/json')
+
+
+@login_required
 @permission_need([ADMIN, DATA_USER])
 def player_recycle_index(request):
     context = PlayerManager.index(request.user, is_deleted=1)
@@ -207,6 +217,14 @@ def player_recycle_index(request):
     context.update(menus=menus)
 
     return TemplateResponse(request, "change_list.html", context=context)
+
+
+@login_required
+@permission_need([ADMIN, DATA_USER])
+def ajax_player_recycle_index(request):
+    player_info = PlayerManager.player_condition_query(request.user, is_deleted=1)
+
+    return HttpResponse(json.dumps({'data': player_info}), content_type='application/json')
 
 
 @login_required
@@ -233,7 +251,7 @@ def edit_player(request, id):
         context.update(menus=menus)
         return TemplateResponse(request, 'change.html', context=context)
     else:
-        PlayerManager.update(id, request.POST)
+        PlayerManager.update(request.user, id, request.POST)
 
         return HttpResponseRedirect(reverse('player_index'))
 
@@ -275,7 +293,7 @@ def import_player(request):
                                             current_time,
                                             settings.FILE_UPLOAD_STORAGE_DIR,
                                             stored_name, file.name)
-            except Exception as err:
+            except ValueError as err:
                 return HttpResponse(json.dumps({'msg': str(err)}), status=500)
 
         return HttpResponse(json.dumps({'msg': 'OK'}))
@@ -302,7 +320,13 @@ def import_detail(request, import_id):
 def recycle_player(request, id):
     ret_context = {'code': 0, 'message': u'恢复玩家成功！'}
     try:
-        Player.objects.filter(id__in=id).update(is_deleted=0)
+        player_set = Player.objects.filter(id__in=id)
+        for player in player_set:
+            if player.is_deleted == 0:
+                continue
+            set_operator(player, request.user)
+            player.is_deleted = 0
+            player.save(update_fields=['is_deleted'])
     except Exception:
         logger.exception("recycle player error: ")
         ret_context.update(code=1, message=u'恢复玩家失败，内部错误！')
@@ -320,7 +344,7 @@ def recycle_player(request, id):
     'really': fields.Bool(required=False, missing=False)
 })
 def delete_player(request, id, force=False, really=False):
-    can_delete, player_obj = PlayerManager.delete(id, force, really)
+    PlayerManager.delete(request.user, id, force, really)
 
     # False, obj: 不可以删除，需要确认
     # False, None: 可以删除，但是删除失败
@@ -329,15 +353,7 @@ def delete_player(request, id, force=False, really=False):
 
     if request.is_ajax():
         content = {'code': 0}
-        if player_obj is None:
-            content.update(message=u'玩家删除成功！' if can_delete else u'玩家删除失败！', need_verify=False)
-        else:
-            if can_delete:
-                content.update(message=u'玩家［ %s ］删除成功！' % player_obj.account, need_verify=False)
-            else:
-                content.update(need_verify=True, message=u'玩家［ %s ] 已经被客服锁定，是否强制删除？' % player_obj.account)
         return HttpResponse(content=json.dumps(content), content_type='application/json')
-
     else:
         player_index_url = reverse('player_index')
         return HttpResponseRedirect(player_index_url)
@@ -354,26 +370,10 @@ def delete_player(request, id, force=False, really=False):
         'really': fields.Bool(required=False, missing=False)
     })
 def delete_player_multiple(request, id, force=False, really=False):
-    can_delete, locked_player_set = PlayerManager.delete(id, force, really)
+    print(id)
+    delete_success = PlayerManager.delete(request.user, id, force, really)
 
-    # True, None: 可以删除，删除成功
-    # False, obj: 不可以删除，需要确认
-    # False, None: 可以删除，但是删除失败
-
-    if locked_player_set is None:
-        if can_delete:
-            return HttpResponse(content=json.dumps({'code': 0, 'message': u'玩家删除成功！', 'need_verify': False}),
-                                content_type='application/json')
-        else:
-            return HttpResponse(content=json.dumps({'code': 1, 'message': u'玩家删除失败！', 'need_verify': False}),
-                                content_type='application/json')
-    else:
-        locked_player_list = [locked_player.account for locked_player in locked_player_set]
-        locked_player_str = '%s 等' % ", ".join(locked_player_list[:5])
-
-        return HttpResponse(content=json.dumps({
-            'code': 0, 'message': u'玩家 %s 已被客服锁定，是否强制删除？' % locked_player_str, 'need_verify': True
-        }), content_type='application/json')
+    return HttpResponse(content=json.dumps({'code': 0}), content_type="application/json")
 
 
 @login_required
@@ -630,6 +630,57 @@ def delete_role(request, id):
         return HttpResponseRedirect(role_index_url)
 
 # Role View End -------------
+
+
+# Alert View Begin
+@login_required
+def alert_index(request):
+    context = AlertManager.index()
+    menus = Context.menus(request.user)
+
+    context.update(menus=menus)
+
+    return TemplateResponse(request, "change_list.html", context=context)
+
+
+@login_required
+def alert_all(request):
+    alert_json = AlertManager.all(request.user)
+
+    return HttpResponse(json.dumps(alert_json), content_type='application/json')
+
+
+@login_required
+@csrf_exempt
+def ajax_alert_all(request):
+    alert_json = AlertManager._ajax_query_all(request.user)
+
+    return HttpResponse(json.dumps(alert_json), content_type='application/json')
+
+
+@login_required
+def red_alert(request, alert_id):
+    try:
+        alert = Alert.objects.get(id=alert_id)
+        if alert.receiver_id == request.user.id:
+            alert.marked = True
+            alert.save()
+    except ObjectDoesNotExist:
+        pass
+
+    return HttpResponse('OK')
+
+
+@login_required
+@csrf_exempt
+def red_alert_multi(request):
+    alert_ids = request.POST.get('id')
+
+    alert_id_list = alert_ids.split(',')
+    AlertManager.has_red(alert_id_list)
+
+    return HttpResponse('OK')
+# Alert View End
 
 
 # Game View Begin   ----------

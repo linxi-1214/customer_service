@@ -16,7 +16,7 @@
             {% endif %}
             <th style="display: none"></th>
             {% for col in table.headers %}
-                <th {% if col.class %}class="{{ col.class }}"{% endif %} {% if row.style %}style="{{ row.style }}"{% endif %}>{{ col.text|safe }}</th>
+                <th {% if col.class %}class="{{ col.class }}"{% endif %} {% if row.style %}style="{{ row.style }}"{% endif %}>{{ col.text }}</th>
             {% endfor %}
         </tr>
     </thead>
@@ -154,8 +154,10 @@
 
          $('.table').on('order.dt', function() {
             var order = table.order();
+            console.log( 'Ordering on column ' + order[0][0] + ' ('+order[0][1]+')' );
             var col = table.column(order[0][0]);
             var title = col.header();
+            console.log('Column title clicked on: '+$(title).html());
         });
 
         $('.tooltip-demo').tooltip({

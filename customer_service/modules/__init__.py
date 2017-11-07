@@ -6,6 +6,7 @@ from .context import Context
 from .user import UserManager
 from .contact_result import ContactResultManager
 from .service import ServiceManager
+from .alert import AlertManager
 
 __all__ = ["GameManager", "MenuManager", "PlayerManager", "RoleManager", "UserManager", "Context",
-           "ContactResultManager", "ServiceManager"]
+           "ContactResultManager", "ServiceManager", "AlertManager"]

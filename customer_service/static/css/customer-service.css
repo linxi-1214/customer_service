@@ -68,6 +68,12 @@ div.top-alert {
     margin-top: 0;
 }
 
+.navbar-top-links .dropdown-alerts,
+.navbar-top-links .dropdown-messages,
+.navbar-top-links .dropdown-tasks {
+    min-width: 500px;
+}
+
 
 /*.form-control {*/
     /*color: #fff;*/

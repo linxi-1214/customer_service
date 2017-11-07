@@ -125,7 +125,7 @@
                 </li>
                 <!-- /.dropdown -->
                 <li class="dropdown">
-                    <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                    <a class="dropdown-toggle" data-toggle="dropdown" kind="bell" href="#">
                         <i class="fa fa-bell fa-fw"></i> <i class="fa fa-caret-down"></i>
                     </a>
                     <ul class="dropdown-menu dropdown-alerts">
@@ -141,7 +141,7 @@
                         <li class="divider"></li>
                         {% endfor %}
                         <li>
-                            <a class="text-center" href="#">
+                            <a class="text-center" href="{% url 'alert_index' %}">
                                 <strong>查看所有通知</strong>
                                 <i class="fa fa-angle-right"></i>
                             </a>
@@ -257,6 +257,7 @@
             $("#page-wrapper").css({'min-height': window_height-nav_height});
         })
     </script>
+    <script src="{% static 'js/alert.js' %}"></script>
 </body>
 
 </html>

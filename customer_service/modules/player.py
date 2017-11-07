@@ -238,28 +238,151 @@ class PlayerManager:
                 ]
 
     @staticmethod
-    def index(user, is_deleted=0):
-        sql = """
-            SELECT
-                player.id,
-                player.account,
-                player.username,
-                player.mobile,
-                player.qq,
-                player.locked,
-                player.come_from,
-                player.charge_count,
-                player.charge_money_total,
-                customer_service_user.loginname,
-                customer_service_user.first_name,
-                customer_service_user.last_name
-            FROM player
+    def _render_action_html(user, is_deleted):
+        delete_url = reverse('delete_player')
+        recycle_url = reverse('recycle_player')
+        contact_url = reverse('contract_player')
+        edit_url = reverse('edit_player', args=(0,))
+        edit_url = os.path.dirname(edit_url.rstrip('/'))
+
+        if user.role_id == settings.SERVICE_ROLE:
+            function = """function () {
+                return '<div class="text-center tooltip-demo">' +
+                    '<a class="btn btn-social-icon contact btn-sm" action="contact_player" ' +
+                    '    data-toggle="tooltip" data-placement="bottom"' +
+                    '    href="#" title="联系该玩家" url="%s">' +
+                    '    <i class="fa fa-phone-square"></i>' +
+                    '</a>' +
+                '</div>';
+            }""" % contact_url
+        else:
+            if is_deleted:
+                function = """function() {
+                    return '<div class="text-center tooltip-demo">' +
+                        '<a class="btn btn-social-icon contact btn-sm" action="recycle_player" ' +
+                        ' data-toggle="tooltip" data-placement="bottom" href="#" title="恢复该玩家" url="%s">' +
+                        '    <i class="fa fa-recycle"></i>' +
+                        '</a>' +
+                        '<a class="btn btn-social-icon delete btn-sm" action="delete_player" delete="1" ' +
+                        ' data-toggle="tooltip" data-placement="bottom" href="#" title="删除" url="%s">' +
+                        '    <i class="fa fa-trash-o"></i>' +
+                        '</a>' +
+                    '</div>';
+                }""" % (recycle_url, delete_url)
+            else:
+                function = """function () {
+                    return '<div class="text-center tooltip-demo">' +
+                        '<a class="btn btn-social-icon contact btn-sm" action="contact_player" ' +
+                        ' data-toggle="tooltip" data-placement="bottom" href="#" title="联系该玩家" url="%s">' +
+                        '    <i class="fa fa-phone-square"></i>' +
+                        '</a>' +
+                        '<a class="btn btn-social-icon edit btn-sm" data-toggle="tooltip" action="edit_player" ' +
+                        ' data-placement="bottom" href="#" title="编辑" url="%s">' +
+                        '    <i class="fa fa-edit"></i>' +
+                        '</a>' +
+                        '<a class="btn btn-social-icon delete btn-sm" action="delete_player" delete="0" ' +
+                        ' data-toggle="tooltip" data-placement="bottom" href="#" title="删除" url="%s">' +
+                        '    <i class="fa fa-trash-o"></i>' +
+                        '</a>' +
+                    '</div>'
+                }""" % (contact_url, edit_url, delete_url)
+
+        return function
+
+    @staticmethod
+    def player_condition_query(user, is_deleted=0, search_columns=None, order_columns=None, pagination=None):
+        player_query_sql = """
+        SELECT
+            player.id, player.account, player.username, player.mobile, player.qq, player.locked,
+            player.come_from, player.charge_count, player.charge_money_total,
+            game.`name` AS register_from_game, player.register_from_game_time,
+            customer_service_user.loginname, customer_service_user.first_name, customer_service_user.last_name,
+
+            player_bind_info.result, player_bind_info.contract_time,
+
+            player_login_info.login_game, player_login_info.login_time,
+
+            account_log.last_charge_game, account_log.last_charge_time, account_log.last_charge_money
+        FROM
+            player
                 LEFT JOIN
-                customer_service_user ON customer_service_user.id = player.locked_by_user_id
+            game ON game.id = player.register_from_game_id
+                LEFT JOIN
+            customer_service_user ON customer_service_user.id = player.locked_by_user_id
+                LEFT JOIN
+            (SELECT
+                player_bind_info.contract_time,
+                    contract_result.result,
+                    player_bind_info.id
+            FROM
+                player_bind_info
+            INNER JOIN contract_result ON contract_result.id = player_bind_info.contract_result_id) AS player_bind_info ON player_bind_info.id = player.last_contact_id
+                LEFT JOIN
+            (SELECT
+                player_login_info.id,
+                    player_login_info.login_time,
+                    game.`name` AS login_game
+            FROM
+                player_login_info
+            INNER JOIN game ON game.id = player_login_info.game_id) AS player_login_info ON player_login_info.id = player.last_login_info_id
+                LEFT JOIN
+            (SELECT
+                account_log.id,
+                    account_log.money AS last_charge_money,
+                    account_log.charge_time AS last_charge_time,
+                    game.`name` AS last_charge_game
+            FROM
+                account_log
+            INNER JOIN game ON game.id = account_log.game_id) AS account_log ON account_log.id = player.last_account_log_id
             WHERE player.is_deleted = %s
+        """
+
+        params = [is_deleted]
+        if user.role_id != settings.ADMIN_ROLE:
+            # 非管理员只能查看自己锁定的玩家
+            player_query_sql += "AND player.locked_by_user_id = %s"
+            params.append(user.id)
+
+        with connection.cursor() as cursor:
+            cursor.execute(player_query_sql, params)
+            player_qry_set = namedtuplefetchall(cursor)
+
+        def _strftime(d):
+            return d.strftime('%Y-%m-%d %H:%M:%S') if d else '--'
+
+        player_info = [
+            {
+                'id': _player.id,
+                'account': _player.account,
+                'username': _player.username or '--',
+                'mobile': _player.mobile or '--',
+                'charge_count': _player.charge_count or 0, 'charge_money_total': _player.charge_money_total or 0,
+                'qq': _player.qq or '--', 'register_from_game': _player.register_from_game or '--',
+                'register_time': _strftime(_player.register_from_game_time),
+                'loginname': _player.loginname, 'come_from': _player.come_from or '--',
+                'last_login_name': _player.login_game, 'last_login_time': _strftime(_player.login_time),
+                'last_charge_game': _player.last_charge_game or '--', 'last_charge_money': _player.last_charge_money or 0,
+                'last_charge_time': _strftime(_player.last_charge_time),
+                'result': _player.result
+            } for _player in player_qry_set
+        ]
+        return player_info
+
+    @staticmethod
+    def index2(user, is_deleted=0, order_columns=None):
+        sql = """
+        SELECT
+            player.id, player.account, player.username, player.mobile,
+            player.qq, player.locked, player.come_from, player.charge_count, player.charge_money_total,
+            customer_service_user.loginname, customer_service_user.first_name, customer_service_user.last_name
+        FROM player
+            LEFT JOIN
+            customer_service_user ON customer_service_user.id = player.locked_by_user_id
+        WHERE player.is_deleted = %s
         """
         params = [is_deleted]
         if user.role_id != settings.ADMIN_ROLE:
+            # 非管理员只能查看自己锁定的玩家
             sql += "AND player.locked_by_user_id = %s"
             params.append(user.id)
 
@@ -414,7 +537,7 @@ class PlayerManager:
             tbody = []
 
         media = Media(js=[
-            'js/player.js',
+            'js/player.js', 'vendor/jqPaginator.min.js',
             'vendor/datatables/js/dataTables.buttons.min.js',
             'vendor/xlsx/xlsx.full.min.js',
             'vendor/xlsx/Blob.js', 'vendor/xlsx/FileSaver.js',
@@ -422,28 +545,38 @@ class PlayerManager:
             'js/export.js', 'js/table.js'
         ])
 
-        table_buttons = [
-            {
-                'text': u'全 选', 'class': 'btn-sm btn-success',
-                'click': "select_all(false, '_player-table');"
-            },
-            {
-                'text': u'反 选', 'class': 'btn-sm btn-success',
-                'click': "select_all(true, '_player-table');"
-            },
-            {
-                'text': u'删 除', 'class': 'btn-sm btn-danger',
-                'click': "delete_selected('_player-table', '%s', %s);" % (
-                    reverse('delete_player_multi'), "true" if is_deleted else "false")
-            }
-        ]
-        if is_deleted:
-            table_buttons.append(
+        table_buttons = []
+        if user.role_id in (settings.ADMIN_ROLE, settings.DATA_ROLE):
+            table_buttons = [
                 {
-                    'text': u'恢 复', 'class': 'btn-sm btn-primary',
-                    "click": 'recycle_selected("_player-table", "%s");' % reverse('recycle_player')
+                    'text': u'全 选', 'class': 'btn-sm btn-success',
+                    'click': "select_all(false, '_player-table');"
+                },
+                {
+                    'text': u'反 选', 'class': 'btn-sm btn-success',
+                    'click': "select_all(true, '_player-table');"
+                },
+                {
+                    'text': u'选择当前页', 'class': 'btn-sm btn-info',
+                    'click': "select_current_all(false, '_player-table');"
+                },
+                {
+                    'text': u'反选当前页', 'class': 'btn-sm btn-info',
+                    'click': "select_current_all(true, '_player-table');"
+                },
+                {
+                    'text': u'删 除', 'class': 'btn-sm btn-danger',
+                    'click': "delete_selected('_player-table', '%s', %s);" % (
+                        reverse('delete_player_multi'), "true" if is_deleted else "false")
                 }
-            )
+            ]
+            if is_deleted:
+                table_buttons.append(
+                    {
+                        'text': u'恢 复', 'class': 'btn-sm btn-primary',
+                        "click": 'recycle_selected("_player-table", "%s");' % reverse('recycle_player')
+                    }
+                )
 
         context = {
             'breadcrumb_items': [
@@ -467,12 +600,123 @@ class PlayerManager:
                     {'text': u'账号'}, {'text': u'姓名'}, {'text': u'手机号'},
                     {'text': u'QQ号码'}, {'text': u'注册游戏'}, {'text': u'注册时间'},
                     {'text': u'所属客服'}, {'text': u'渠道'}, {'text': u'最近登录游戏'}, {'text': u'登录时间'},
-                    {'text': u'充值次数'}, {'text': u'充值总额'},
-                    {'text': u'最近充值游戏'}, {'text': u'最近充值金额'}, {'text': u'最近充值时间'}, {'text': u'联系结果'},
+                    {'text': u'充值<br>次数'}, {'text': u'充值总额'},
+                    {'text': u'最近充值游戏'}, {'text': u'最近<br>充值<br>金额'}, {'text': u'最近充值时间'}, {'text': u'联系结果'},
                     {'text': u'操作'}
                 ],
                 'tbody': tbody,
-                'top_form': PlayerManager._generate_top_form(user)
+                'top_form': PlayerManager._generate_top_form(user),
+                # 'paginate': {
+                #     'current': 1,
+                #     'total': 20,
+                #     'start': 1, 'end': 10,
+                #     'total_pages': 20,
+                #
+                # }
+            },
+            'modal': {
+                "id": "_player_delete_modal"
+            }
+        }
+
+        return context
+
+    @staticmethod
+    def index(user, is_deleted=0, order_columns=None):
+        columns = [
+            {'name': 'id', 'serial': 1, 'attrs': {'visible': 'false'}},
+            {'name': 'account', 'serial': 2},
+            {'name': 'username', 'serial': 3},
+            {'name': 'mobile', 'serial': 4},
+            {'name': 'qq', 'serial': 5},
+            {'name': 'register_from_game', 'serial': 6},
+            {'name': 'register_time', 'serial': 7},
+            {'name': 'loginname', 'serial': 8},
+            {'name': 'come_from', 'serial': 9},
+            {'name': 'last_login_name', 'serial': 10},
+            {'name': 'last_login_time', 'serial': 11},
+            {'name': 'charge_count', 'serial': 12},
+            {'name': 'charge_money_total', 'serial': 13},
+            {'name': 'last_charge_game', 'serial': 14},
+            {'name': 'last_charge_money', 'serial': 15},
+            {'name': 'last_charge_time', 'serial': 16},
+            {'name': 'result', 'serial': 17},
+            {'name': 'action', 'serial': 18,
+             'render': PlayerManager._render_action_html(user, is_deleted)
+             }
+        ]
+
+        media = Media(js=[
+            'js/player.js', 'vendor/jqPaginator.min.js',
+            'vendor/datatables/js/dataTables.buttons.min.js',
+            'vendor/xlsx/xlsx.full.min.js',
+            'vendor/xlsx/Blob.js', 'vendor/xlsx/FileSaver.js',
+            'vendor/xlsx/swfobject.js', 'vendor/xlsx/downloadify.min.js', 'vendor/xlsx/base64.min.js',
+            'js/export.js', 'js/table.js', 'js/player_table.js'
+        ])
+
+        table_buttons = []
+        if user.role_id in (settings.ADMIN_ROLE, settings.DATA_ROLE):
+            table_buttons = [
+                {
+                    'text': u'全 选', 'class': 'btn-sm btn-success',
+                    'click': "select_all(false, '_player-table');"
+                },
+                {
+                    'text': u'反 选', 'class': 'btn-sm btn-success',
+                    'click': "select_all(true, '_player-table');"
+                },
+                {
+                    'text': u'选择当前页', 'class': 'btn-sm btn-info',
+                    'click': "select_current_all(false, '_player-table');"
+                },
+                {
+                    'text': u'反选当前页', 'class': 'btn-sm btn-info',
+                    'click': "select_current_all(true, '_player-table');"
+                },
+                {
+                    'text': u'删 除', 'class': 'btn-sm btn-danger',
+                    'click': "delete_selected('_player-table', '%s', %s);" % (
+                        reverse('delete_player_multi'), "true" if is_deleted else "false")
+                }
+            ]
+            if is_deleted:
+                table_buttons.append(
+                    {
+                        'text': u'恢 复', 'class': 'btn-sm btn-primary',
+                        "click": 'recycle_selected("_player-table", "%s");' % reverse('recycle_player')
+                    }
+                )
+
+        context = {
+            'breadcrumb_items': [
+                {
+                    'href': '#',
+                    'active': True,
+                    'label': u'玩家列表'
+                }
+            ],
+            'panel_heading': u'玩家信息列表',
+            'media': {
+                'js': media.render_js()
+            },
+            'add_url': reverse('add_player'),
+            'add_url_label': u'登记玩家信息',
+            'table': {
+                'id': '_player-table',
+                'extensions': {'select': True},
+                'buttons': table_buttons,
+                'headers': [
+                    {'text': u'账号'}, {'text': u'姓名'}, {'text': u'手机号'},
+                    {'text': u'QQ号码'}, {'text': u'注册游戏'}, {'text': u'注册时间'},
+                    {'text': u'所属客服'}, {'text': u'渠道'}, {'text': u'最近登录游戏'}, {'text': u'登录时间'},
+                    {'text': u'充值<br>次数'}, {'text': u'充值总额'},
+                    {'text': u'最近充值游戏'}, {'text': u'最近<br>充值<br>金额'}, {'text': u'最近充值时间'}, {'text': u'联系结果'},
+                    {'text': u'操作'}
+                ],
+                'ajax': reverse('ajax_player_index') if not is_deleted else reverse('ajax_player_recycle_index'),
+                'columns': columns,
+                'top_form': PlayerManager._generate_top_form(user),
             },
             'modal': {
                 "id": "_player_delete_modal"
@@ -905,7 +1149,6 @@ class PlayerManager:
                     LIMIT 1
                 """.format(query_columns=query_columns)
 
-                print(player_select_sql)
                 with connection.cursor() as cursor:
                     cursor.execute(player_select_sql)
                     player_info = namedtuplefetchall(cursor)
@@ -951,7 +1194,7 @@ class PlayerManager:
 
         # 查询玩家当前的标记信息
 
-        contact_result = ContractResult.objects.all()
+        contact_result = ContractResult.objects.filter(~Q(process=settings.PROCESS['looked']))
         last_contact_result_sql = """
             SELECT *
             FROM player_bind_info
@@ -1155,6 +1398,18 @@ class PlayerManager:
             except ObjectDoesNotExist:
                 pass
 
+        looked_bind_info = ContractResult.objects.filter(process=settings.PROCESS['looked']).first()
+
+        current_bind_info_sql = """
+        SELECT * FROM player_bind_info WHERE id = (SELECT MAX(id) FROM player_bind_info WHERE player_id=%s {other_cond})
+        """
+
+        if looked_bind_info:
+            _cond = "AND contract_result_id != %d" % looked_bind_info.id
+            current_bind_info_sql = current_bind_info_sql.format(other_cond=_cond)
+        else:
+            current_bind_info_sql = current_bind_info_sql.format(other_cond="")
+
         for player in player_set:
             tmp_update_fields = update_fields
             for changed_field in update_fields:
@@ -1173,20 +1428,33 @@ class PlayerManager:
                 )
 
             if status_obj:
-                bind_info = PlayerBindInfo(
-                    user=user, player=player, is_bound=status_obj.bind,
-                    contract_time=datetime.now(), contract_result=status_obj,
-                    in_effect=True, note=notes
-                )
-                set_operator(bind_info, user)
-                bind_info.save()
+                current_bind_info = None
+                if notes.strip() == "":
+                    with connection.cursor() as cursor:
+                        cursor.execute(current_bind_info_sql, (player.id, ))
+                        current_bind_info_set = namedtuplefetchall(cursor)
+                        if len(current_bind_info_set) > 0:
+                            current_bind_info = current_bind_info_set[0]
+
+                if notes.strip() != "" or \
+                        (current_bind_info is None or current_bind_info.contract_result_id != status_obj.id):
+                    bind_info = PlayerBindInfo(
+                        user=user, player=player, is_bound=status_obj.bind,
+                        contract_time=datetime.now(), contract_result=status_obj,
+                        in_effect=True, note=notes
+                    )
+                    set_operator(bind_info, user)
+                    bind_info.save()
+
+                    tmp_update_fields.append('last_contact_id')
+                    player.last_contact_id = bind_info.id
 
             player.save(update_fields=tmp_update_fields)
 
         return player_set
 
     @staticmethod
-    def update(player_id, params):
+    def update(user, player_id, params):
         try:
             player_obj = Player.objects.get(id=player_id)
         except ObjectDoesNotExist:
@@ -1223,6 +1491,7 @@ class PlayerManager:
         player_obj.username = player_name
         player_obj.mobile = player_mobile
         player_obj.qq = player_qq
+        set_operator(player_obj, user)
         player_obj.save(update_fields=update_fields)
 
         register_game_objs = RegisterInfo.objects.filter(player_id=player_id)
@@ -1257,39 +1526,26 @@ class PlayerManager:
         return player_obj
 
     @staticmethod
-    def delete(player_id, force_delete=False, really_delete=False):
+    def delete(user, player_id, force_delete=False, really_delete=False):
         if isinstance(player_id, (list, tuple)):
-            # check player if locked by service while force_delete and really_delete are both False
-            if not (force_delete or really_delete):
-                player_locked_set = Player.objects.filter(id__in=player_id, locked_by_user__isnull=False)
-                if player_locked_set.count() > 0:
-                    return False, player_locked_set
-            try:
-                if not really_delete:
-                    Player.objects.filter(id__in=player_id).update(is_deleted=True)
-                else:
-                    Player.objects.filter(id__in=player_id).delete()
-            except:
-                return False, None
-
-            return True, None
+            if not really_delete:
+                Player.objects.filter(id__in=player_id).update(is_deleted=True)
+            else:
+                Player.objects.filter(id__in=player_id).delete()
+            return True
         else:
             try:
                 player_obj = Player.objects.get(id=player_id)
-                if not (force_delete or really_delete):
-                    if player_obj.locked_by_user is not None:
-                        return False, player_obj
                 if not really_delete:
                     player_obj.is_deleted = True
+                    set_operator(player_obj, user)
                     player_obj.save()
                 else:
                     player_obj.delete()
             except ObjectDoesNotExist:
-                player_obj = None
-            except:
-                return False, None
+                pass
 
-            return True, player_obj
+            return True
 
     @staticmethod
     def save(user, params):
@@ -1323,7 +1579,7 @@ class PlayerManager:
             mobile=player_mobile,
             qq=player_qq
         )
-        setattr(player_obj, 'operator', user)
+        set_operator(player_obj, user)
         player_obj.save()
 
         for game_field in game_field_info:
@@ -1370,37 +1626,50 @@ class PlayerManager:
             account = '%d' % int(account_col.value) if account_col.ctype == xlrd.XL_CELL_NUMBER else account_col.value
             mobile = '%d' % int(mobile.value) if mobile.ctype == xlrd.XL_CELL_NUMBER else mobile.value
             come_from = player_data[title_index[u'所属渠道']].value if u'所属渠道' in title_index else None
-            charge_money = player_data[title_index[u'最近充值金额']].value if u'最近充值金额' in title_index else None
+            charge_money = player_data[title_index[u'最近充值金额']].value if u'最近充值金额' in title_index else 0
             charge_time = player_data[title_index[u'最近充值时间']].value if u'最近充值时间' in title_index else None
             last_login_game = player_data[title_index[u'最近登录游戏']].value if u'最近登录游戏' in title_index else None
             last_login_time = player_data[title_index[u'最近登陆时间']].value if u'最近登陆时间' in title_index else None
             register_name = player_data[title_index[u'注册游戏']].value if u'注册游戏' in title_index else None
             register_time = player_data[title_index[u'注册时间']].value if u'注册时间' in title_index else None
             game_count = player_data[title_index[u'游戏数量']].value if u'游戏数量' in title_index else None
+            charge_count = player_data[title_index[u'充值次数']].value if u'充值次数' in title_index else None
             charge_money_total = player_data[title_index[u'充值总额']].value if u'充值总额' in title_index else None
 
             try:
+                update_fields = None
                 try:
                     player_obj = Player.objects.get(account=account)
+                    update_fields = updated_fields(player_obj, {
+                        'mobile': mobile, 'come_from': come_from, 'imported_from': player_import.id,
+                        'charge_money_total': charge_money_total, 'game_count': game_count,
+                        'register_from_game_time': register_time, 'charge_count': charge_count or 0,
+                    }, ['mobile', 'come_from', 'charge_money_total', 'game_count', 'imported_from',
+                        'register_from_game_time'])
                     player_obj.mobile = mobile
                     player_obj.come_from = come_from
-                    player_obj.imported_from = player_import
+                    player_obj.imported_from = player_import.id
                     player_obj.charge_money_total = charge_money_total
+                    player_obj.charge_count = charge_count or 0
                     player_obj.game_count = game_count
-                    player_obj.save()
+                    player_obj.register_from_game_time = register_time
                 except ObjectDoesNotExist:
-                    player_obj = Player.objects.create(
+                    player_obj = Player(
                         account=account,
-                        mobile=mobile,
-                        come_from=come_from,
-                        imported_from=player_import, game_count=game_count, charge_money_total=charge_money_total
+                        mobile=mobile, charge_count=charge_count or 0,
+                        come_from=come_from, register_from_game_time=register_time,
+                        imported_from=player_import.id, game_count=game_count, charge_money_total=charge_money_total
                     )
+                set_operator(player_obj, user)
+                player_obj.save(update_fields=update_fields)
 
                 if register_name.strip() != '':
                     try:
                         game_obj = Game.objects.get(name=register_name)
                     except ObjectDoesNotExist:
                         game_obj = Game.objects.create(name=register_name)
+
+                    player_obj.register_from_game_id = game_obj.id
 
                     try:
                         register_info_obj = RegisterInfo.objects.get(
@@ -1416,26 +1685,31 @@ class PlayerManager:
                             register_time=register_time
                         )
 
-                    AccountLog.objects.create(
-                        player=player_obj,
-                        game=game_obj,
-                        money=charge_money,
-                        charge_time=charge_time,
-                        recorder=user
-                    )
-
+                last_login_game_obj = None
                 if last_login_game.strip() != '':
                     try:
                         last_login_game_obj = Game.objects.get(name=last_login_game)
                     except ObjectDoesNotExist:
                         last_login_game_obj = Game.objects.create(name=last_login_game)
 
-                    PlayerLoginInfo.objects.create(
+                    player_login_info = PlayerLoginInfo.objects.create(
                         player=player_obj,
                         game=last_login_game_obj,
                         login_time=last_login_time
                     )
-            except Exception as err:
+                    player_obj.last_login_info_id = player_login_info.id
+
+                account_log = AccountLog.objects.create(
+                    player=player_obj,
+                    game=last_login_game_obj,
+                    money=charge_money,
+                    charge_time=charge_time,
+                    recorder=user
+                )
+
+                player_obj.last_account_log_id = account_log.id
+                player_obj.save()
+            except ValueError as err:
                 logger.exception('import player error:')
                 import_result_error.append({
                     'account': account,
