@@ -56,5 +56,5 @@ $(function () {
         }, 'json')
     }
     flush_alert();
-    setInterval(flush_alert, 2000);
+    // setInterval(flush_alert, 2000);
 });

@@ -7,8 +7,19 @@
         vertical-align: middle;
         font-size: 12px;
     }
+    .table-bordered {border: 1px solid #434857;}
+    .table-bordered>tbody>tr>td,
+    .table-bordered>tbody>tr>th {
+        border: 1px solid #434857;
+    }
+    .table-bordered>tfoot>tr>td,
+    .table-bordered>tfoot>tr>th,
+    .table-bordered>thead>tr>td,
+    .table-bordered>thead>tr>th {
+        border: 0;
+    }
 </style>
-<table id="{{ table.id }}" class="table table-striped" style="{{ table.style }}">
+<table id="{{ table.id }}" class="table table-striped table-bordered" style="{{ table.style }}">
     <thead>
         <tr class="{{ table.header.class }}" style="{{ table.header.style }}">
             {% if table.extensions.select %}
@@ -39,9 +50,9 @@
 
 <script language="javascript">
     $(function () {
-       $("#{{ table.id }}")
-           .on('init.dt', function () {
-               $("label > select").select2({
+        $("#{{ table.id }}")
+            .on('init.dt', function () {
+                $("label > select").select2({
                     placeholder: {
                         id: 0,
                         text: '-- 请选择 --'
@@ -49,6 +60,7 @@
                     allowClear: false,
                     containerCssClass: 'table-select'
                 });
+                $("#{{ table.id }}").css({width: "100%"});
                 {% if table.buttons %}
                     var button_row = $("div.dataTables_wrapper div:first-child");
                     var length_col = button_row.children()[0];
@@ -72,73 +84,83 @@
                         next: '<li class="next"><a href="javascript:void(0);">下一页<\/a><\/li>',
                         last: '<li class="last"><a href="javascript:void(0);">末页<\/a><\/li>',
                         page: '<li class="page"><a href="javascript:void(0);">\{\{page\}\}<\/a><\/li>',
-{#                        onPageChange: function (n) {#}
-{#                            $("#demo1-text").html("当前第" + n + "页");#}
-{#                        }#}
+                        {#                        onPageChange: function (n) {#}
+                        {#                            $("#demo1-text").html("当前第" + n + "页");#}
+                        {#                        }#}
                     });
                 {% endif %}
-               $('.tooltip-demo').tooltip({
+                $('.tooltip-demo').tooltip({
                     selector: "[data-toggle=tooltip]",
                     container: "body"
-               });
+                });
 
-           })
-           .on('draw.dt', function() {
-               {% for init_func in table.on_init %}
-                   {{ init_func|safe }}
-               {% endfor %}
-               $('.tooltip-demo').tooltip({
-                   selector: "[data-toggle=tooltip]",
-                   container: "body"
-               });
-           })
-           .DataTable(
-           {
-               columnDefs: [
-                   {% if table.extensions.select %}
-                   {
-                       targets: 0,
-                       orderable: false,
-                       className: 'select-checkbox',
-                       width: "30px",
-                       searchable: false,
-                       data: null,
-                       defaultContent: ''
-                   },
-                   {% endif %}
-                   {% if table.columns %}
-                       {% for column in table.columns %}
-                           {targets: {{ column.serial }}, data: '{{ column.name }}',
-                           {% if column.render %}render: {{ column.render|safe }},{% endif %}
-                           {% if column.attrs %}
-                               {% for key, val in column.attrs.items %}
-                                   {{ key }}: {{ val|safe }},
-                               {% endfor %}
-                           {% endif %}
-                           },
-                       {% endfor %}
-                   {% endif %}
-               ],
+            })
+            .on('draw.dt', function () {
+                {% for init_func in table.on_init %}
+                    {{ init_func|safe }}
+                {% endfor %}
+                $('.tooltip-demo').tooltip({
+                    selector: "[data-toggle=tooltip]",
+                    container: "body"
+                });
+            })
+{#            .on('order.dt', function () {#}
+{#                var table = $("#{{ table.id }}").DataTable();#}
+{#                var table_order = table.order();#}
+{#                var order_info = "";#}
+{#                $.each(table_order, function(ind, col_order) {#}
+{#                    order_info += col_order[0] + "---" + col_order[1] + "|";#}
+{#                });#}
+{#                console.log(order_info);#}
+{#            })#}
+            .DataTable({
+                columnDefs: [
+                    {% if table.extensions.select %}
+                        {
+                            targets: 0,
+                            orderable: false,
+                            className: 'select-checkbox',
+                            width: "20px",
+                            searchable: false,
+                            data: null,
+                            defaultContent: ''
+                        },
+                    {% endif %}
+                    {% for column in table.columns %}
+                        {
+                            targets: {{ column.serial }}, data: '{{ column.name }}',
+                            {% if column.render %}
+                                render: {{ column.render|safe }},
+                            {% endif %}
+                            {% for key, val in column.attrs.items %}
+                                {{ key }}: {{ val|safe }},
+                            {% endfor %}
+                        },
+                    {% endfor %}
+                ],
                 select: {
-                    style:    'multi',
-                    selector: 'td:first-child'
-                   },
-               lengthMenu: [[10, 15, 20, 25, 30, 40, 50, -1], [10, 15, 20, 25, 30, 40, 50, "All"]],
-               language: {
+                    style: 'multi', selector: 'td:first-child'
+                },
+                lengthMenu: [[10, 15, 20, 25, 30, 40, 50, -1], [10, 15, 20, 25, 30, 40, 50, "All"]],
+                language: {
                     emptyTable: "暂无数据",
                     info: "当前显示<b>_START_</b>至<b>_END_</b>项  共 <b>_TOTAL_</b> 项",
+                    infoFiltered:   "（ 从 _MAX_ 项中筛选的结果 ）",
                     lengthMenu: "每页显示 _MENU_ 项",
                     loadingRecords: "正在加载...",
                     search: '<div class="asr bld">_INPUT_<span class="bv search bdb"></span></div>',
                     searchPlaceholder: "搜索...",
                     zeroRecords: "无匹配项",
-                    paginate: {
+                    paginate:{
                         "next": "下一页",
-                        "previous": "上一页"
+                        "previous": "上一页",
+                        "first": "首页"
                     }
-               },
-               ajax: "{{ table.ajax }}"
-           }
-       );
+                },
+                {% for option, val in table.render_attributes.items %}
+                    {{ option|safe }}: {{ val|safe }},
+                {% endfor %}
+                ajax: {{ table.ajax|safe }}
+            });
     });
 </script>

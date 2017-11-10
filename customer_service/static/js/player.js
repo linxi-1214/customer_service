@@ -105,23 +105,17 @@ function player_query() {
     var result = $("#_result option:selected").text();
     var service = $("#_user option:selected").text();
 
-    $('#_player-table').DataTable().column( 2 ).search(
-        account, true, true
-    ).draw();
-    $('#_player-table').DataTable().column( 6 ).search(
-        game, true, true
-    ).draw();
-    $('#_player-table').DataTable().column( 4 ).search(
-        mobile, true, true
-    ).draw();
-    $('#_player-table').DataTable().column( 8 ).search(
-        service, true, true
-    ).draw();
-    $('#_player-table').DataTable().column( 17 ).search(
-        result, true, true
-    ).draw();
+    // $('#_player-table').DataTable().clearPipeline();
 
-    $('#_player-table').DataTable().draw();
+    $('#_player-table').DataTable()
+        .column(2).search(account, true, true)
+        .column(6).search(game, false, false)
+        .column(4).search(mobile, true, true)
+        .column(8).search(service, false, false)
+        .column(17).search(result, false, false)
+        .draw();
+
+    // $('#_player-table').DataTable().draw();
     return false;
 }
 
@@ -230,23 +224,23 @@ $(function () {
         console.log(e.message)
     }
 
-    if ( $("#_charge_money_min").length > 0 )
+    if ( $("#_charge_money_min").length > 0 ) {
         $.fn.dataTable.ext.search.push(
-            function( settings, data, dataIndex ) {
-                var min = parseInt( $('#_charge_money_min').val(), 10 );
-                var max = parseInt( $('#_charge_money_max').val(), 10 );
-                var money = parseFloat( data[13] ) || 0; // use data for the age column
+            function (settings, data, dataIndex) {
+                var min = parseInt($('#_charge_money_min').val(), 10);
+                var max = parseInt($('#_charge_money_max').val(), 10);
+                var money = parseFloat(data[13]) || 0; // use data for the age column
 
-                if ( ( isNaN( min ) && isNaN( max ) ) ||
-                     ( isNaN( min ) && money <= max ) ||
-                     ( min <= money   && isNaN( max ) ) ||
-                     ( min <= money   && money <= max ) )
-                {
+                if (( isNaN(min) && isNaN(max) ) ||
+                    ( isNaN(min) && money <= max ) ||
+                    ( min <= money && isNaN(max) ) ||
+                    ( min <= money && money <= max )) {
                     return true;
                 }
                 return false;
             }
         );
+    }
 
     if ($("#_import-time-input").length > 0)
         $.fn.dataTable.ext.search.push(

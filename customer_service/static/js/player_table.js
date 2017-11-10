@@ -16,6 +16,7 @@ $(function () {
                 if (_confirm == false) {
                     return false;
                 }
+                delete_player(tr, url, row_data.id, really_delete);
             } else {
                 var modal = $("#_player_delete_modal");
                 modal.find('.modal-title').text('删除确认');

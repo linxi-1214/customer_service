@@ -1,7 +1,9 @@
 import os
+import re
 import json
 import logging
 from datetime import datetime
+from collections import namedtuple
 
 from django.template.response import TemplateResponse, HttpResponse
 from django.core.urlresolvers import reverse
@@ -200,12 +202,97 @@ def player_index(request):
     return TemplateResponse(request, "change_list.html", context=context)
 
 
+class Params:
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+    def __str__(self):
+        repr = []
+        for attr in self.__dict__:
+            repr.append('%s: %s' % (attr, getattr(self, attr)))
+        return "\n".join(repr)
+
+
+def _structure_namedtuple(request, array_name):
+    def structure_dict_pair(obj, key, value):
+        m = re.match(r'\[(\w+)\](.*)', key)
+        if m:
+            if m.group(2) != '':
+                _tmp_obj = getattr(obj, m.group(1), None)
+                if _tmp_obj is None:
+                    _tmp_obj = Params()
+                    setattr(obj, m.group(1), _tmp_obj)
+                structure_dict_pair(_tmp_obj, m.group(2), value)
+            else:
+                setattr(obj, m.group(1), value)
+
+    nt = []
+    expression = r'^' + array_name + r'\[(\d+)\](.*)'
+    reg = re.compile(expression)
+    for k, v in request.GET.items():
+        m = reg.match(k)
+        if m is None:
+            continue
+        array_index = int(m.group(1))
+        try:
+            tmp_obj = nt[array_index]
+        except IndexError:
+            for ind in range(array_index - len(nt) + 1):
+                tmp_obj = Params()
+                nt.append(tmp_obj)
+            tmp_obj = nt[array_index]
+
+        structure_dict_pair(tmp_obj, m.group(2), v)
+    return nt
+
+
 @login_required
 @permission_need([ADMIN, DATA_USER, CUSTOMER_SERVICE])
 def ajax_player_index(request):
-    player_info = PlayerManager.player_condition_query(request.user)
+    """
+    request.GET: draw ['1']
+                columns[0][data] ['']
+                columns[0][name] ['']
+                columns[0][searchable] ['false']
+                columns[0][orderable] ['false']
+                columns[0][search][value] ['']
+                columns[0][search][regex] ['false']
+                columns[1][data] ['id']
+                columns[1][name] ['']
+                columns[1][searchable] ['true']
+                columns[1][orderable] ['true']
+                columns[1][search][value] ['']
+                columns[1][search][regex] ['false']
+                ......
+                order[0][column] ['0']
+                order[0][dir] ['asc']
+                start ['0']
+                length ['100']
+                search[value] ['']
+                search[regex] ['false']
+                charge_money_min ['10']
+                charge_money_max ['100']
+                _ ['1510189926957']
+    :param request:
+    :return:
+    """
+    columns = _structure_namedtuple(request, 'columns')
+    orders = _structure_namedtuple(request, 'order')
+    search_info = _structure_namedtuple(request, 'search')
 
-    return HttpResponse(json.dumps({'data': player_info}), content_type='application/json')
+    draw = request.GET.get('draw')
+    start = request.GET.get('start')
+    length = request.GET.get('length')
+    money_min = request.GET.get('charge_money_min', None)
+    money_max = request.GET.get('charge_money_max', None)
+
+    p = Params(columns=columns, orders=orders, search_info=search_info,
+               draw=draw, start=start, length=length, money_min=money_min, money_max=money_max)
+
+    player_info = PlayerManager.player_condition_query(request.user, pagination=p)
+
+    return HttpResponse(json.dumps(player_info), content_type='application/json')
 
 
 @login_required
