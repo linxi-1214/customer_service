@@ -325,8 +325,6 @@ class PlayerManager:
         if p.money_max is not None and p.money_max != '':
             search.append('charge_money_total <= %s' % p.money_max)
 
-        print(p)
-
         if search:
             search_sql = ' AND %s ' % ' AND '.join(search)
         else:
@@ -408,8 +406,6 @@ class PlayerManager:
             player_filtered_count = qry_set[0].counter
 
         player_query_sql += limit_sql
-
-        print(player_query_sql)
 
         with connection.cursor() as cursor:
             cursor.execute(player_query_sql, params)
@@ -818,6 +814,13 @@ class PlayerManager:
                 "label": game_obj.name
             } for game_obj in game_objs
         ]
+        service_objs = User.objects.all()
+        service_options = [
+            {
+                "value": service.id,
+                "label": service.loginname
+            } for service in service_objs
+        ]
         media = Media(js=['common/selector2/js/select2.full.js', 'js/player.js'],
                       css={'all': ['common/selector2/css/select2.min.css', 'css/player.css']})
         return {
@@ -864,7 +867,36 @@ class PlayerManager:
                         "type": "text",
                         "label": u"QQ号码",
                         "name": "qq",
-                        "id": "_qq",
+                        "id": "_qq"
+                    },
+                    {
+                        "type": "group",
+                        "attrs": {"id": "game_from_id"},
+                        "group_css": "register-game-none",
+                        "group": [
+                            {
+                                "type": "select",
+                                "label": u'注册游戏',
+                                'name': 'game_from_id',
+                                'id': '_game_from_id',
+                                'options': game_options,
+                                "group_css": "col-lg-6"
+                            },
+                            {
+                                "type": "text",
+                                "label": u'注册时间',
+                                "name": "game_from_time",
+                                "id": "_game_from_time_id",
+                                "group_css": "col-lg-6"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "select",
+                        "label": u'所属客服',
+                        "name": "service",
+                        "id": "_service_id",
+                        "options": service_options,
                         "group_css": "previous-border"
                     },
                     {
@@ -876,7 +908,7 @@ class PlayerManager:
                         "group": [
                             {
                                 "type": "select",
-                                "label": u'注册游戏',
+                                "label": u'其他游戏',
                                 'name': 'game_id',
                                 'id': '_game_id',
                                 'options': game_options,
@@ -884,7 +916,7 @@ class PlayerManager:
                             },
                             {
                                 "type": "text",
-                                "label": u'注册时间',
+                                "label": u'关联时间',
                                 "name": "game_time",
                                 "id": "_game_id",
                                 "group_css": "col-lg-4"
@@ -906,7 +938,7 @@ class PlayerManager:
                         "button_type": "button",
                         "group_css": "bottom-border",
                         "extra_class": "btn-outline btn-sm btn-warning btn-block",
-                        "label": u"新&nbsp;增&nbsp;注&nbsp;册&nbsp;游&nbsp;戏",
+                        "label": u"新&nbsp;增&nbsp;关&nbsp;联&nbsp;游&nbsp;戏",
                         "click": "add_register_game();"
                     },
                     {
@@ -937,6 +969,24 @@ class PlayerManager:
         """
 
         game_objs = Game.objects.all()
+        service_objs = User.objects.all()
+
+        service_options = [
+            {
+                "value": service.id,
+                "label": service.loginname,
+                "selected": service.id == player_obj.locked_by_user_id
+
+            } for service in service_objs
+        ]
+
+        register_game_options = [
+            {
+                "value": _game.id,
+                "label": _game.name,
+                "selected": _game.id == player_obj.register_from_game_id
+            } for _game in game_objs
+        ]
 
         with connection.cursor() as cursor:
             cursor.execute(register_game_sql, (player_id, ))
@@ -979,7 +1029,7 @@ class PlayerManager:
                 "group": [
                     {
                         "type": "select",
-                        "label": u'注册游戏',
+                        "label": u'其他游戏',
                         'name': 'game_id' + ('%s' % str(ind-1) if ind > 0 else ''),
                         'id': '_game_id' + ('%s' % str(ind-1) if ind > 0 else ''),
                         'options': game_options['game_options'],
@@ -987,7 +1037,7 @@ class PlayerManager:
                     },
                     {
                         "type": "text",
-                        "label": u'注册时间',
+                        "label": u'关联时间',
                         "name": "game_time" + ("%s" % str(ind-1) if ind > 0 else ''),
                         "id": "_game_time" + ("%s" % str(ind-1) if ind > 0 else ''),
                         "group_css": "col-lg-4",
@@ -1051,9 +1101,39 @@ class PlayerManager:
                         "label": u"QQ号码",
                         "name": "qq",
                         "id": "_qq",
-                        "group_css": "previous-border",
                         "value": player_obj.qq or ''
-                    }
+                    },
+                    {
+                        "type": "group",
+                        "attrs": {"id": "game_from_id"},
+                        "group_css": "register-game-none",
+                        "group": [
+                            {
+                                "type": "select",
+                                "label": u'注册游戏',
+                                'name': 'game_from_id',
+                                'id': '_game_from_id',
+                                'options': register_game_options,
+                                "group_css": "col-lg-6"
+                            },
+                            {
+                                "type": "text",
+                                "label": u'注册时间',
+                                "value": player_obj.register_from_game_time.strftime('%Y-%m-%d %H:%M:%S') if player_obj.register_from_game_time else '',
+                                "name": "game_from_time",
+                                "id": "_game_from_time_id",
+                                "group_css": "col-lg-6"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "select",
+                        "label": u'所属客服',
+                        "name": "service",
+                        "id": "_service_id",
+                        "options": service_options,
+                        "group_css": "previous-border"
+                    },
                 ]
             }
         }
@@ -1227,7 +1307,7 @@ class PlayerManager:
         player_query_sql = """
         SELECT
             player.id, player.account, player.username, player.mobile, player.qq, player.locked,
-            player.come_from, player.charge_count, player.charge_money_total,
+            player.come_from, player.charge_count, player.charge_money_total, player.locked_by_user_id,
             game.`name` AS register_from_game, player.register_from_game_time,
             customer_service_user.loginname, customer_service_user.first_name, customer_service_user.last_name,
             player_bind_info.result_id, player_bind_info.result, player_bind_info.contract_time AS contact_time,
@@ -1343,6 +1423,10 @@ class PlayerManager:
     def contract_display(player_id, user):
         player = PlayerManager._current_contact_player(player_id, user.id)
 
+        if player_id is not None and user.role_id != settings.ADMIN_ROLE:
+            if player.locked_by_user_id != user.id:
+                raise PermissionError(u'您没有权限查看该玩家的信息！')
+
         if not player:
             return PlayerManager._no_contact_player()
 
@@ -1456,6 +1540,9 @@ class PlayerManager:
         try:
             player_obj = Player.objects.get(id=player_id)
 
+            if user.role_id != settings.ADMIN_ROLE and player_obj.locked_by_user_id != user.id:
+                raise PermissionError(u'你没有权限修改该玩家！')
+
             if player_obj.mobile:
                 player_set = Player.objects.filter(mobile=player_obj.mobile)
             else:
@@ -1546,9 +1633,14 @@ class PlayerManager:
         player_name = params.get("username")
         player_mobile = params.get('mobile', '')
         player_qq = params.get('qq', '')
+        service = params.get('service')
+        game_from = params.get('game_from_id')
+        game_from_time = params.get('game_from_time', None)
 
         update_fields = updated_fields(
-            player_obj, params, ['account', 'username', 'mobile', 'qq']
+            player_obj, params, ['account', 'username', 'mobile', 'qq'],
+            key_map={'register_from_game_id': 'game_from_id', 'register_from_game_time': 'game_from_time',
+                     'locked_by_user_id': 'service'}
         )
 
         game_field_info = {}
@@ -1573,6 +1665,14 @@ class PlayerManager:
         player_obj.username = player_name
         player_obj.mobile = player_mobile
         player_obj.qq = player_qq
+        player_obj.register_from_game_id = game_from
+        player_obj.register_from_game_time = game_from_time
+        player_obj.locked_by_user_id = service
+        locked = 0 if service is None else 1
+        locked_changed = player_obj.locked != locked
+        if locked_changed:
+            player_obj.locked = locked
+            update_fields.append('locked')
         set_operator(player_obj, user)
         player_obj.save(update_fields=update_fields)
 
@@ -1635,9 +1735,12 @@ class PlayerManager:
         player_name = params.get("username")
         player_mobile = params.get('mobile', '')
         player_qq = params.get('qq', '')
+        service = params.get('service')
+        game_from = params.get('game_from_id')
+        game_from_time = params.get('game_from_time')
 
         game_field_info = []
-        game_field_reg = re.compile(r'^game_id([0-9]+)')
+        game_field_reg = re.compile(r'^game_id([0-9]*)')
         for field_name, field_value in params.items():
             m = game_field_reg.match(field_name)
             if m is not None:
@@ -1659,9 +1762,14 @@ class PlayerManager:
             account=account,
             username=player_name,
             mobile=player_mobile,
-            qq=player_qq
+            qq=player_qq,
+            register_from_game_id=game_from,
+            register_from_game_time=game_from_time
         )
-        set_operator(player_obj, user)
+        if service:
+            player_obj.locked = True
+            player_obj.locked_by_user_id = service
+        # set_operator(player_obj, user)
         player_obj.save()
 
         for game_field in game_field_info:

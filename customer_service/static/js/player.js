@@ -207,12 +207,15 @@ $(function () {
 
     try {
         $("select[kind=form-select]").select2({
-            // placeholder: {
-            //     id: 0,
-            //     text: '-- 请选择' + this.name + ' --'
-            // },
+            placeholder: {
+                id: 0,
+                text: '-- 请选择 --'
+            },
             allowClear: true,
             containerCss: {height: '34px'}
+        });
+        $("select[kind=form-select][data-placeholder]").select2({
+            allowClear: true, containerCss: {height: '34px'}
         });
         $("select[kind=form-select]").on('select2:select', function (e) {
             var option_value = e.params.data.id;

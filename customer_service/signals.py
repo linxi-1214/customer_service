@@ -19,9 +19,11 @@ def player_track_handler(sender, **kwargs):
     # 玩家跟踪处理
 
     player = kwargs.get('instance')
+    operator = getattr(player, 'operator', None)
+    if operator is None:
+        return
     created = kwargs.get('created')
     update_fields = kwargs.get('update_fields')
-    operator = getattr(player, 'operator')
     content_type = ContentType.objects.get(app_label='customer_service', model='player')
 
     action_flag = ADDITION if created else CHANGE
