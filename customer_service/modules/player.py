@@ -1424,7 +1424,7 @@ class PlayerManager:
         player = PlayerManager._current_contact_player(player_id, user.id)
 
         if player_id is not None and user.role_id != settings.ADMIN_ROLE:
-            if player.locked_by_user_id != user.id:
+            if player.locked_by_user_id is not None and player.locked_by_user_id != user.id:
                 raise PermissionError(u'您没有权限查看该玩家的信息！')
 
         if not player:
@@ -1540,7 +1540,8 @@ class PlayerManager:
         try:
             player_obj = Player.objects.get(id=player_id)
 
-            if user.role_id != settings.ADMIN_ROLE and player_obj.locked_by_user_id != user.id:
+            if user.role_id != settings.ADMIN_ROLE and\
+                    (player_obj.locked_by_user_id is not None and player_obj.locked_by_user_id != user.id):
                 raise PermissionError(u'你没有权限修改该玩家！')
 
             if player_obj.mobile:
