@@ -46,6 +46,13 @@
                         //    ($("#inputStatus option:selected").text() == "联系成功" && $("#inputQQ").val() != "") ||
                         //    "获取到QQ号码才能设置为联系成功";
                         return $("#inputStatus option:selected").text() == "联系成功";
+                    },
+                    notes_filled: function () {
+                        var txt = $("#inputNotes").val();
+                        if (txt != "") {
+                            return $("#inputStatus option:selected").length <= 0;
+                        } else
+                            return false;
                     }
                 }
             });
@@ -105,12 +112,17 @@
                             </div>
                             <label for="inputStatus" class="col-sm-1 control-label">标记状态</label>
                             <div class="col-sm-3">
-                                <select id="inputStatus" name="status" class="form-control" kind="form-select">
+                                <select id="inputStatus" name="status"
+                                        class="form-control" kind="form-select"
+                                        data-rule="required(notes_filled)"
+                                        data-msg-notes_filled="如需备注，请选择一种标记状态"
+                                        data-target="#status_error">
                                     <option></option>
                                     {% for s in status %}
                                         <option value="{{ s.value }}" {% if s.selected %}selected{% endif %}>{{ s.label }}</option>
                                     {% endfor %}
                                 </select>
+                                <div id="status_error"></div>
                             </div>
                             <label class="col-sm-1 control-label">最近登录游戏</label>
                             <div class="col-sm-3">
