@@ -1476,7 +1476,8 @@ class PlayerManager:
             ) for ind, _note in enumerate(note_info_set, start=1)
         ]
 
-        contact_result = ContractResult.objects.filter(~Q(process=settings.PROCESS['looked']))
+        contact_result = ContractResult.objects.filter(~Q(process=settings.PROCESS['looked']) &
+                                                       Q(show=1))
         status_info = [
             {
                 "value": result.id,

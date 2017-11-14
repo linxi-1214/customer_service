@@ -187,7 +187,7 @@ class ContactResultManager:
         bind_text = params.get('bind', 0)
         bind = int(bind_text) == 1
         process = params.get('result_bind')
-        show = params.get('show', 0) == 1
+        show = params.get('show', 0) == '1'
 
         try:
             ContractResult.objects.get(id=result_id)
@@ -280,7 +280,7 @@ class ContactResultManager:
         bind_text = params.get('bind', 0)
         bind = int(bind_text) == 1
         process = params.get('result_bind')
-        show = params.get('show', 0) == 1
+        show = params.get('show', 0) == '1'
 
         result_obj = ContractResult(result=result, bind=bind, process=process, show=show)
 
