@@ -1,4 +1,4 @@
-django==1.11.23
+django==1.11.28
 webargs==1.8.1
 XlsxWriter==1.0.0
 xlrd==1.1.0
